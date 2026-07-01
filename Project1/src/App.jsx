@@ -13,6 +13,7 @@ import "./App.css";
 function AppContent() {
   const location = useLocation();
   const isDashboard = location.pathname === "/dashboard";
+  const isAuthPage = location.pathname === "/login" || location.pathname === "/signup";
 
   return (
     <div className="app">
@@ -27,7 +28,7 @@ function AppContent() {
           <Route path="/dashboard" element={<Dashboard />} />
         </Routes>
       </main>
-      {!isDashboard && <Footer />}
+      {!isDashboard && !isAuthPage && <Footer />}
     </div>
   );
 }

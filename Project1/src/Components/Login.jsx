@@ -252,8 +252,6 @@ export default function Login() {
       </section>
 
       <div className="loginCard authCard">
-        <div className="loginLogo authLogo">LF</div>
-
         {mode === "login" && (
           <>
             <h2 className="loginTitle">Login</h2>

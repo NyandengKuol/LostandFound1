@@ -162,7 +162,6 @@ export default function SignUp() {
       </section>
 
       <div className="signupCard authCard">
-        <div className="signupLogo authLogo">LF</div>
         <h2 className="signupTitle">Signup</h2>
         <p className="signupSub">Create Account</p>
 
