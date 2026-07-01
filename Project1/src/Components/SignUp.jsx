@@ -156,16 +156,15 @@ export default function SignUp() {
     <div className="signupPage authPage" style={{ "--auth-bg": `url(${loginBackground})` }}>
       <section className="authHero" aria-label="Lost and Found sign up">
         <div className="authCopy">
-          <span className="authKicker">Join Lost &amp; Found</span>
-          <h1>Create a calmer way to recover important things.</h1>
-          <p>Set up your account with a password, or continue with Google when you want the fastest path in.</p>
+          <h1>Join Lost &amp; Found</h1>
+          <p>Create an account to start reporting, finding, and claiming securely.</p>
         </div>
       </section>
 
       <div className="signupCard authCard">
         <div className="signupLogo authLogo">LF</div>
-        <h2 className="signupTitle">Create Account</h2>
-        <p className="signupSub">Start reporting, finding, and claiming securely.</p>
+        <h2 className="signupTitle">Signup</h2>
+        <p className="signupSub">Create Account</p>
 
         {error && <div className="signupError">{error}</div>}
         {success && <div className="signupSuccess">{success}</div>}

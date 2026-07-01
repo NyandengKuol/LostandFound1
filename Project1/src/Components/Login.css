@@ -4,13 +4,14 @@
 
 .authPage {
   min-height: 100vh;
-  display: grid;
-  grid-template-columns: minmax(280px, 1fr) minmax(340px, 440px);
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: clamp(24px, 5vw, 70px);
+  justify-content: center;
+  gap: clamp(20px, 4vw, 34px);
   padding: clamp(28px, 5vw, 72px);
   position: relative;
-  overflow: hidden;
+  overflow-x: hidden;
   background-image:
     linear-gradient(110deg, rgba(6, 24, 34, 0.88), rgba(15, 68, 76, 0.62) 47%, rgba(242, 247, 245, 0.18)),
     var(--auth-bg);
@@ -36,13 +37,15 @@
 }
 
 .authHero {
-  max-width: 690px;
+  width: min(100%, 720px);
+  text-align: center;
 }
 
 .authCopy {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  align-items: center;
+  gap: 12px;
 }
 
 .authKicker {
@@ -59,17 +62,17 @@
 }
 
 .authCopy h1 {
-  max-width: 680px;
+  max-width: 720px;
   margin: 0;
-  font-size: clamp(36px, 6vw, 74px);
-  line-height: 0.96;
+  font-size: clamp(38px, 6vw, 68px);
+  line-height: 1;
   font-weight: 900;
   letter-spacing: 0;
   text-wrap: balance;
 }
 
 .authCopy p {
-  max-width: 590px;
+  max-width: 620px;
   margin: 0;
   color: rgba(248, 251, 251, 0.84);
   font-size: clamp(16px, 2vw, 20px);
@@ -78,7 +81,6 @@
 
 .authCard {
   width: min(100%, 440px);
-  justify-self: end;
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -107,7 +109,7 @@
 
 .loginTitle,
 .signupTitle {
-  margin: 2px 0 0;
+  margin: 2px 0 6px;
   color: #10232b;
   font-size: 30px;
   line-height: 1.1;
@@ -116,7 +118,7 @@
 
 .loginSub,
 .signupSub {
-  margin: -4px 0 4px;
+  margin: -8px 0 6px;
   color: #65727a;
   font-size: 14px;
   line-height: 1.5;
@@ -500,8 +502,7 @@
 
 @media (max-width: 860px) {
   .authPage {
-    grid-template-columns: 1fr;
-    align-items: start;
+    justify-content: flex-start;
     padding: 32px 18px 42px;
   }
 
@@ -523,8 +524,8 @@
   }
 
   .authCard {
-    justify-self: stretch;
     width: 100%;
+    max-width: 440px;
   }
 }
 

@@ -247,9 +247,7 @@ export default function Login() {
     <div className="loginPage authPage" style={{ "--auth-bg": `url(${loginBackground})` }}>
       <section className="authHero" aria-label="Lost and Found sign in">
         <div className="authCopy">
-          <span className="authKicker">Lost &amp; Found</span>
-          <h1>Find your way back to what matters.</h1>
-          <p>Secure access for reporting lost items, claiming found items, and tracking every update in one polished workspace.</p>
+          <h1>Lost and Found</h1>
         </div>
       </section>
 
@@ -258,8 +256,7 @@ export default function Login() {
 
         {mode === "login" && (
           <>
-            <h2 className="loginTitle">Welcome Back</h2>
-            <p className="loginSub">Sign in to continue your search.</p>
+            <h2 className="loginTitle">Login</h2>
 
             {error && <div className="loginError">{error}</div>}
             {success && <div className="loginSuccess">{success}</div>}
