@@ -1,4 +1,5 @@
 import { useState } from "react"
+import contactBg from "../assets/contact-bg.png"
 
 const SUPPORT_EMAIL = "suuportlostfound@gmail.com"
 
@@ -69,14 +70,16 @@ export default function Contacts() {
   return (
     <section className="contactPage">
 
-      {/* HEADER */}
-      <div className="contactHeader">
-        <span className="badge">WE'RE HERE TO HELP</span>
-        <p>CONTACT</p>
-        <h1>Reach out to our team for help</h1>
-        <p>
-          Need help with lost items, reports, or partnerships? Our team is ready to support you.
-        </p>
+      {/* HERO BANNER */}
+      <div className="contactHeroBanner" style={{ backgroundImage: `url(${contactBg})` }}>
+        <div className="contactHeroOverlay">
+          <span className="badge">WE'RE HERE TO HELP</span>
+          <p className="contactHeroLabel">CONTACT</p>
+          <h1>Reach out to our team for help</h1>
+          <p className="contactHeroSub">
+            Need help with lost items, reports, or partnerships? Our team is ready to support you.
+          </p>
+        </div>
       </div>
 
       <div className="contactContainer">

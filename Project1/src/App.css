@@ -80,19 +80,74 @@ body {
   flex: 1;
   text-align: center;
   align-items: center;
-  padding: 30px 20px 60px;
+  padding: 0 20px 60px;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   background: #fffdf7;
 }
 
 .sectionTitle {
   text-align: center;
-  margin: 0 0 40px;
+  margin: 48px 0 40px;
   font-size: 32px;
   color: hsl(46, 87%, 43%);
   font-weight: bold;
+}
+
+/* ── SERVICES HERO BANNER ── */
+.servicesHeroBanner {
+  width: 100%;
+  min-height: 380px;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-bottom: 0;
+}
+
+.servicesHeroOverlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, rgba(5,15,30,0.88) 0%, rgba(10,80,100,0.62) 55%, rgba(5,15,30,0.82) 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 14px;
+  padding: 60px 20px;
+}
+
+.servicesHeroBadge {
+  display: inline-block;
+  background: rgba(99,220,200,0.15);
+  color: #7eeedd;
+  border: 1px solid rgba(99,220,200,0.3);
+  padding: 5px 16px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.servicesHeroTitle {
+  color: #ffffff;
+  font-size: clamp(32px, 5vw, 52px);
+  font-weight: 800;
+  line-height: 1.1;
+  margin: 0;
+  text-shadow: 0 2px 24px rgba(0,0,0,0.35);
+}
+
+.servicesHeroSub {
+  color: rgba(255,255,255,0.8);
+  font-size: clamp(14px, 1.5vw, 17px);
+  line-height: 1.6;
+  margin: 0;
+  max-width: 560px;
 }
 
 .servicecards {
@@ -217,15 +272,81 @@ body {
 
 /* ── CONTACT PAGE ── */
 .contactPage {
-  padding: 40px 20px 60px;
+  padding: 0 0 60px;
   background: linear-gradient(180deg, #f7f4ea, #ffffff);
   min-height: 80vh;
 }
 
+/* Contact Hero Banner */
+.contactHeroBanner {
+  width: 100%;
+  min-height: 360px;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-bottom: 48px;
+}
+
+.contactHeroOverlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, rgba(8,28,42,0.82) 0%, rgba(15,118,110,0.55) 60%, rgba(8,28,42,0.72) 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 60px clamp(20px, 8vw, 120px);
+  gap: 12px;
+}
+
+.contactHeroOverlay .badge {
+  display: inline-block;
+  background: rgba(255,200,100,0.18);
+  color: #ffd97a;
+  border: 1px solid rgba(255,210,100,0.35);
+  padding: 5px 14px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.contactHeroLabel {
+  color: rgba(255,255,255,0.6);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.contactHeroOverlay h1 {
+  color: #ffffff;
+  font-size: clamp(28px, 4vw, 48px);
+  font-weight: 800;
+  line-height: 1.15;
+  margin: 0;
+  max-width: 600px;
+  text-shadow: 0 2px 20px rgba(0,0,0,0.3);
+}
+
+.contactHeroSub {
+  color: rgba(255,255,255,0.82);
+  font-size: clamp(14px, 1.5vw, 16px);
+  line-height: 1.6;
+  margin: 0;
+  max-width: 520px;
+}
+
 .contactHeader {
   text-align: left;
-  max-width: 800px;
+  max-width: 1100px;
   margin: 0 auto 40px;
+  padding: 0 20px;
 }
 
 .contactHeader .badge {
@@ -255,6 +376,7 @@ body {
   gap: 30px;
   max-width: 1100px;
   margin: auto;
+  padding: 0 20px;
 }
 
 .contactInfo {
