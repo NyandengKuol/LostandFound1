@@ -1,113 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import loginBackground from "../assets/login-bg.png";
+import GoogleSignInModal from "./GoogleSignInModal";
 import "./Login.css";
 
-const googleAccounts = [
-  { name: "Lilian Beam", email: "lilian.beam@gmail.com", initials: "LB" },
-  { name: "Nyandeng", email: "nyandeng@gmail.com", initials: "NK" },
-  { name: "Support Admin", email: "supportlostandfound@gmail.com", initials: "SA" },
-];
 
-function GoogleChooserModal({ title, onClose, onChoose }) {
-  const [customEmail, setCustomEmail] = useState("");
-  const [customName, setCustomName] = useState("");
-  const [showCustomInput, setShowCustomInput] = useState(false);
-
-  return (
-    <div className="googleChooserOverlay" onClick={onClose}>
-      <div className="googleChooserBox" onClick={e => e.stopPropagation()}>
-
-        {/* Google G logo */}
-        <div className="googleChooserHeader">
-          <svg viewBox="0 0 48 48" width="40" height="40" aria-hidden="true" style={{ display: "block", margin: "0 auto 12px" }}>
-            <path d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12
-              c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4
-              C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20
-              C44,22.659,43.862,21.35,43.611,20.083z" fill="#FFC107"/>
-            <path d="M6.306,14.691l6.571,4.819C14.655,15.108,19.003,12,24,12c3.059,0,5.842,1.154,7.961,3.039
-              l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z" fill="#FF3D00"/>
-            <path d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36
-              c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z" fill="#4CAF50"/>
-            <path d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571
-              c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24
-              C44,22.659,43.862,21.35,43.611,20.083z" fill="#1976D2"/>
-          </svg>
-          <h3 className="gcTitle">{title}</h3>
-          <p className="gcSubtitle">to continue to <strong>Lost &amp; Found</strong></p>
-        </div>
-
-        <div className="googleChooserList">
-          {!showCustomInput ? (
-            <>
-              {googleAccounts.map(account => (
-                <button
-                  type="button"
-                  key={account.email}
-                  className="googleChooserItem"
-                  onClick={() => onChoose(account.email, account.name)}
-                >
-                  <span className="googleChooserAvatar gcAvatar--color">{account.initials}</span>
-                  <span className="googleChooserDetails">
-                    <span className="googleChooserName">{account.name}</span>
-                    <span className="googleChooserEmail">{account.email}</span>
-                  </span>
-                  <svg className="gcChevron" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#9aa0a6" strokeWidth="2">
-                    <polyline points="9 18 15 12 9 6" />
-                  </svg>
-                </button>
-              ))}
-              <button type="button" className="googleChooserItem gcUseAnother" onClick={() => setShowCustomInput(true)}>
-                <span className="googleChooserAvatar gcAvatar--grey">
-                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="12" cy="8" r="4"/>
-                    <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-                    <line x1="15" y1="3" x2="21" y2="3"/>
-                    <line x1="18" y1="0" x2="18" y2="6"/>
-                  </svg>
-                </span>
-                <span className="googleChooserDetails">
-                  <span className="googleChooserName">Use another account</span>
-                </span>
-              </button>
-            </>
-          ) : (
-            <div className="googleChooserCustom">
-              <input
-                placeholder="Enter your name"
-                value={customName}
-                onChange={e => setCustomName(e.target.value)}
-              />
-              <input
-                type="email"
-                placeholder="Enter your Google email"
-                value={customEmail}
-                onChange={e => setCustomEmail(e.target.value)}
-              />
-              <div className="googleCustomActions">
-                <button type="button" className="googleSecBtn" onClick={() => setShowCustomInput(false)}>Back</button>
-                <button
-                  type="button"
-                  className="googlePrimBtn"
-                  disabled={!customEmail}
-                  onClick={() => onChoose(customEmail, customName || "Google User")}
-                >
-                  Continue
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="gcFooter">
-          <a href="#" onClick={e => e.preventDefault()}>Privacy Policy</a>
-          <span className="gcFooterDot">•</span>
-          <a href="#" onClick={e => e.preventDefault()}>Terms of Service</a>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 export default function Login() {
   const navigate = useNavigate();
@@ -243,28 +140,9 @@ export default function Login() {
     }
   };
 
-  const handleGoogleLogin = async (email, name) => {
-    setLoading(true);
-    setError("");
-    setSuccess("");
-    try {
-      const res = await fetch("http://localhost:4000/api/login/google", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, name }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Google login failed");
-
-      localStorage.setItem("user", JSON.stringify(data.user));
-      localStorage.removeItem("adminToken");
-      setShowGoogleMock(false);
-      navigate("/dashboard");
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
-    }
+  const handleGoogleSuccess = (user) => {
+    setShowGoogleMock(false);
+    navigate("/dashboard");
   };
 
   return (
@@ -434,10 +312,10 @@ export default function Login() {
       </div>
 
       {showGoogleMock && (
-        <GoogleChooserModal
-          title="Sign in with Google"
+        <GoogleSignInModal
+          mode="signin"
           onClose={() => setShowGoogleMock(false)}
-          onChoose={handleGoogleLogin}
+          onSuccess={handleGoogleSuccess}
         />
       )}
     </div>
