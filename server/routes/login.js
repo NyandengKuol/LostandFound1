@@ -3,6 +3,8 @@ const router = express.Router();
 const User = require("../models/user");
 const bcrypt = require("bcryptjs");
 const { sendEmail } = require("../utils/mailer");
+const axios = require("axios");
+const jwt = require("jsonwebtoken");
 require("dotenv").config();
 
 // POST /api/login
@@ -164,9 +166,20 @@ router.post("/reset-password", async (req, res) => {
 // POST /api/login/google
 router.post("/google", async (req, res) => {
   try {
-    const { email, name } = req.body;
+    const { access_token } = req.body;
+    if (!access_token) {
+      return res.status(400).json({ message: "Google access_token is required" });
+    }
+
+    // Verify token with Google
+    const googleRes = await axios.get("https://www.googleapis.com/oauth2/v3/userinfo", {
+      headers: { Authorization: `Bearer ${access_token}` },
+    });
+    
+    const { email, name, picture, sub } = googleRes.data;
+
     if (!email) {
-      return res.status(400).json({ message: "Google email is required" });
+      return res.status(400).json({ message: "Google email not found" });
     }
 
     let user = await User.findOne({ email });
@@ -184,24 +197,41 @@ router.post("/google", async (req, res) => {
         username,
         email,
         isGoogleUser: true,
+        googleId: sub,
+        avatar: picture,
         role: "user"
       });
       await user.save();
       console.log(`🌐 Registered new Google User: ${username} (${email})`);
+    } else if (!user.googleId) {
+      // Link existing account with Google if not already linked
+      user.isGoogleUser = true;
+      user.googleId = sub;
+      if (!user.avatar) user.avatar = picture;
+      await user.save();
     }
+
+    // Generate our app's JWT token
+    const token = jwt.sign(
+      { id: user._id, email: user.email, role: user.role },
+      process.env.JWT_SECRET || "fallback_secret",
+      { expiresIn: "7d" }
+    );
 
     res.status(200).json({
       message: "Google authentication successful",
+      token,
       user: {
         id: user._id,
         username: user.username,
         email: user.email,
+        avatar: user.avatar,
         role: user.role || "user",
       }
     });
   } catch (error) {
-    console.error("Google login error:", error);
-    res.status(500).json({ message: "Server error" });
+    console.error("Google login error:", error.response?.data || error.message);
+    res.status(500).json({ message: "Failed to authenticate with Google" });
   }
 });
 
