@@ -142,6 +142,7 @@ export default function Login() {
   };
 
   const googleLogin = useGoogleLogin({
+    ux_mode: 'redirect',
     onSuccess: async (tokenResponse) => {
       setLoading(true);
       setError("");
