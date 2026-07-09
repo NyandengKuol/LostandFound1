@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import loginBackground from "../assets/login-bg.png";
-import { useGoogleLogin } from "@react-oauth/google";
 import { LegalModal } from "./LegalModal";
 import "./Login.css";
 
@@ -141,35 +140,58 @@ export default function Login() {
     }
   };
 
-  const googleLogin = useGoogleLogin({
-    ux_mode: 'redirect',
-    onSuccess: async (tokenResponse) => {
-      setLoading(true);
-      setError("");
-      try {
-        const res = await fetch("http://localhost:4000/api/login/google", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ access_token: tokenResponse.access_token }),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.message || "Google login failed");
-
-        localStorage.setItem("user", JSON.stringify(data.user));
-        if (data.token) localStorage.setItem("token", data.token);
-        localStorage.removeItem("adminToken");
-        navigate("/dashboard");
-      } catch (e) {
-        setError(e.message);
-      } finally {
-        setLoading(false);
+  // Handle Google OAuth redirect response
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash && hash.includes("access_token=")) {
+      const params = new URLSearchParams(hash.substring(1));
+      const accessToken = params.get("access_token");
+      if (accessToken) {
+        // Clear the hash from the URL
+        window.history.replaceState(null, null, window.location.pathname);
+        handleGoogleCallback(accessToken);
       }
-    },
-    onError: error => {
-      console.error("Google Login Failed", error);
-      setError("Google Login Failed");
     }
-  });
+  }, []);
+
+  const handleGoogleCallback = async (accessToken) => {
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch("http://localhost:4000/api/login/google", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ access_token: accessToken }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Google login failed");
+
+      localStorage.setItem("user", JSON.stringify(data.user));
+      if (data.token) localStorage.setItem("token", data.token);
+      localStorage.removeItem("adminToken");
+      navigate("/dashboard");
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const googleLogin = () => {
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    if (!clientId) {
+      setError("Google Client ID is missing. Check your .env file.");
+      return;
+    }
+    const redirectUri = window.location.origin + '/login';
+    const authUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");
+    authUrl.searchParams.append("client_id", clientId);
+    authUrl.searchParams.append("redirect_uri", redirectUri);
+    authUrl.searchParams.append("response_type", "token");
+    authUrl.searchParams.append("scope", "email profile openid");
+    authUrl.searchParams.append("prompt", "select_account");
+    window.location.href = authUrl.toString();
+  };
 
   return (
     <div className="loginPage authPage" style={{ "--auth-bg": `url(${loginBackground})` }}>
