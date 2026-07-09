@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useGoogleLogin } from "@react-oauth/google";
+import { apiUrl } from "../api";
 import signupBackground from "../assets/signup-bg.png";
 import { LegalModal } from "./LegalModal";
 import "./SignUp.css";
@@ -28,7 +30,7 @@ export default function SignUp() {
     setSuccess("");
 
     try {
-      const res = await fetch("http://localhost:4000/api/signup", {
+      const res = await fetch(apiUrl("/api/signup"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -67,7 +69,7 @@ export default function SignUp() {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch("http://localhost:4000/api/login/google", {
+      const res = await fetch(apiUrl("/api/login/google"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ access_token: accessToken }),
@@ -86,21 +88,20 @@ export default function SignUp() {
     }
   };
 
-  const googleLogin = () => {
-    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-    if (!clientId) {
-      setError("Google Client ID is missing. Check your .env file.");
-      return;
-    }
-    const redirectUri = window.location.origin + '/signup';
-    const authUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");
-    authUrl.searchParams.append("client_id", clientId);
-    authUrl.searchParams.append("redirect_uri", redirectUri);
-    authUrl.searchParams.append("response_type", "token");
-    authUrl.searchParams.append("scope", "email profile openid");
-    authUrl.searchParams.append("prompt", "select_account");
-    window.location.href = authUrl.toString();
-  };
+  const googleLogin = useGoogleLogin({
+    scope: "email profile openid",
+    prompt: "select_account",
+    onSuccess: tokenResponse => {
+      if (tokenResponse.access_token) {
+        handleGoogleCallback(tokenResponse.access_token);
+      } else {
+        setError("Google did not return an access token. Please try again.");
+      }
+    },
+    onError: () => {
+      setError("Google sign-in failed. Please try again.");
+    },
+  });
 
   return (
     <div className="signupPage authPage" style={{ "--auth-bg": `url(${signupBackground})` }}>

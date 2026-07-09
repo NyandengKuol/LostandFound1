@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "./ThemeContext";
+import { apiUrl } from "../api";
 import "./Dashboard.css";
 
-const API = "http://localhost:4000/api/reports";
+const API = apiUrl("/api/reports");
 
 const emptyForm = {
   title: "", description: "", location: "",

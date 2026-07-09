@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { apiUrl } from "../api"
 import contactBg from "../assets/contact-bg.png"
 
 const SUPPORT_EMAIL = "suuportlostfound@gmail.com"
@@ -39,7 +40,7 @@ export default function Contacts() {
     setStatus(null)
 
     try {
-      const res = await fetch("http://localhost:4000/api/contact", {
+      const res = await fetch(apiUrl("/api/contact"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData)
@@ -205,4 +206,3 @@ export default function Contacts() {
     </section>
   )
 }
-
