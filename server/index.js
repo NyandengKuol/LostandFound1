@@ -10,35 +10,42 @@ const contactRoute = require("./routes/contact");
 
 const app = express();
 
-// ── MIDDLEWARE ──
 app.use(cors());
-
-// Important: 10mb limit needed for base64 image uploads
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ limit: "10mb", extended: true }));
 
-// ── DATABASE ──
-connectDB();
+app.get("/", (req, res) => {
+  res.send("Lost & Found API is running");
+});
 
-// ── ROUTES ──
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (error) {
+    console.error("Database startup error:", error.message);
+    res.status(500).json({
+      message: "Database connection failed. Check MONGO_URI in Vercel.",
+    });
+  }
+});
+
 app.use("/api/signup", signupRoute);
 app.use("/api/login", loginRoute);
 app.use("/api/reports", reportRoute);
 app.use("/api/contact", contactRoute);
 
-// ── HEALTH CHECK ──
-app.get("/", (req, res) => {
-  res.send("🔍 Lost & Found API is running");
+app.use("/api", (req, res) => {
+  res.status(404).json({ message: "API route not found" });
 });
 
-// ── START SERVER ──
 const PORT = process.env.PORT || 4000;
 
 if (process.env.VERCEL !== "1") {
   app.listen(PORT, () => {
-    console.log(` Server running on port ${PORT}`);
-    console.log(` Admin credentials: ${process.env.ADMIN_USERNAME} / ${process.env.ADMIN_PASSWORD}`);
-    console.log(` API URL: http://localhost:${PORT}/api`);
+    console.log(`Server running on port ${PORT}`);
+    console.log(`Admin credentials: ${process.env.ADMIN_USERNAME} / ${process.env.ADMIN_PASSWORD}`);
+    console.log(`API URL: http://localhost:${PORT}/api`);
   });
 }
 
