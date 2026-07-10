@@ -2,10 +2,31 @@
   "installCommand": "cd server && npm install && cd ../Project1 && npm install",
   "buildCommand": "cd Project1 && npm run build",
   "outputDirectory": "Project1/dist",
-  "rewrites": [
+  "builds": [
     {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "src": "api/[...path].js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "Project1/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/[...path].js"
+    },
+    {
+      "src": "/assets/(.*)",
+      "dest": "/assets/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ]
 }

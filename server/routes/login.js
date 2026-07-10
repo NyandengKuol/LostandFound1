@@ -166,14 +166,40 @@ router.post("/reset-password", async (req, res) => {
 // POST /api/login/google
 router.post("/google", async (req, res) => {
   try {
-    const { access_token } = req.body;
-    if (!access_token) {
-      return res.status(400).json({ message: "Google access_token is required" });
+    const { access_token, code, redirect_uri } = req.body;
+    let googleAccessToken = access_token;
+
+    if (!googleAccessToken && code) {
+      const googleClientId = process.env.GOOGLE_CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID;
+
+      if (!googleClientId || !process.env.GOOGLE_CLIENT_SECRET) {
+        return res.status(500).json({
+          message: "Google server OAuth is not configured. Add GOOGLE_CLIENT_SECRET and GOOGLE_CLIENT_ID or VITE_GOOGLE_CLIENT_ID in Vercel.",
+        });
+      }
+
+      const tokenRes = await axios.post(
+        "https://oauth2.googleapis.com/token",
+        new URLSearchParams({
+          code,
+          client_id: googleClientId,
+          client_secret: process.env.GOOGLE_CLIENT_SECRET,
+          redirect_uri,
+          grant_type: "authorization_code",
+        }).toString(),
+        { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
+      );
+
+      googleAccessToken = tokenRes.data.access_token;
+    }
+
+    if (!googleAccessToken) {
+      return res.status(400).json({ message: "Google authorization code or access token is required" });
     }
 
     // Verify token with Google
     const googleRes = await axios.get("https://www.googleapis.com/oauth2/v3/userinfo", {
-      headers: { Authorization: `Bearer ${access_token}` },
+      headers: { Authorization: `Bearer ${googleAccessToken}` },
     });
     
     const { email, name, picture, sub } = googleRes.data;

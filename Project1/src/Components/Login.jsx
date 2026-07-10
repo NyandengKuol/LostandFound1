@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useGoogleLogin } from "@react-oauth/google";
-import { apiUrl } from "../api";
+import { apiRequest } from "../api";
 import loginBackground from "../assets/login-bg.png";
 import { LegalModal } from "./LegalModal";
 import "./Login.css";
@@ -54,13 +54,11 @@ export default function Login() {
     setSuccess("");
 
     try {
-      const res = await fetch(apiUrl("/api/login"), {
+      const data = await apiRequest("/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Login failed");
 
       persistLogin(data);
       navigate("/dashboard");
@@ -81,13 +79,11 @@ export default function Login() {
     setSuccess("");
 
     try {
-      const res = await fetch(apiUrl("/api/login/forgot-password"), {
+      const data = await apiRequest("/api/login/forgot-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: forgotEmail }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Request failed");
 
       setSuccess("A 6-digit reset PIN has been sent to your email.");
       setResetForm(prev => ({ ...prev, email: forgotEmail }));
@@ -116,7 +112,7 @@ export default function Login() {
     setSuccess("");
 
     try {
-      const res = await fetch(apiUrl("/api/login/reset-password"), {
+      const data = await apiRequest("/api/login/reset-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -125,8 +121,6 @@ export default function Login() {
           password: resetForm.password,
         }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Reset failed");
 
       setSuccess("Password reset successfully. Please sign in.");
       setTimeout(() => {
@@ -144,29 +138,35 @@ export default function Login() {
 
   // Handle Google OAuth redirect response
   useEffect(() => {
-    const hash = window.location.hash;
-    if (hash && hash.includes("access_token=")) {
-      const params = new URLSearchParams(hash.substring(1));
-      const accessToken = params.get("access_token");
-      if (accessToken) {
-        // Clear the hash from the URL
-        window.history.replaceState(null, null, window.location.pathname);
-        handleGoogleCallback(accessToken);
-      }
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+    const state = params.get("state");
+    const error = params.get("error");
+
+    if (error && state === "google-login") {
+      window.history.replaceState(null, "", window.location.pathname);
+      setError("Google sign-in was cancelled or blocked. Please try again.");
+      return;
+    }
+
+    if (code && state === "google-login") {
+      window.history.replaceState(null, "", window.location.pathname);
+      handleGoogleCallback(code);
     }
   }, []);
 
-  const handleGoogleCallback = async (accessToken) => {
+  const handleGoogleCallback = async (code) => {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(apiUrl("/api/login/google"), {
+      const data = await apiRequest("/api/login/google", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ access_token: accessToken }),
+        body: JSON.stringify({
+          code,
+          redirect_uri: `${window.location.origin}${window.location.pathname}`,
+        }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Google login failed");
 
       localStorage.setItem("user", JSON.stringify(data.user));
       if (data.token) localStorage.setItem("token", data.token);
@@ -180,18 +180,12 @@ export default function Login() {
   };
 
   const googleLogin = useGoogleLogin({
-    flow: "implicit",
+    flow: "auth-code",
     ux_mode: "redirect",
     redirect_uri: `${window.location.origin}${window.location.pathname}`,
+    state: "google-login",
     scope: "email profile openid",
-    prompt: "select_account",
-    onSuccess: tokenResponse => {
-      if (tokenResponse.access_token) {
-        handleGoogleCallback(tokenResponse.access_token);
-      } else {
-        setError("Google did not return an access token. Please try again.");
-      }
-    },
+    select_account: true,
     onError: () => {
       setError("Google sign-in failed. Please try again.");
     },

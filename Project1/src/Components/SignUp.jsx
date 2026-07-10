@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useGoogleLogin } from "@react-oauth/google";
-import { apiUrl } from "../api";
+import { apiRequest } from "../api";
 import signupBackground from "../assets/signup-bg.png";
 import { LegalModal } from "./LegalModal";
 import "./SignUp.css";
@@ -30,7 +30,7 @@ export default function SignUp() {
     setSuccess("");
 
     try {
-      const res = await fetch(apiUrl("/api/signup"), {
+      const data = await apiRequest("/api/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -39,8 +39,6 @@ export default function SignUp() {
           password: form.password,
         }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Signup failed");
 
       setSuccess("Account created successfully. Please sign in.");
       setTimeout(() => navigate("/login"), 1200);
@@ -53,29 +51,35 @@ export default function SignUp() {
 
   // Handle Google OAuth redirect response
   useEffect(() => {
-    const hash = window.location.hash;
-    if (hash && hash.includes("access_token=")) {
-      const params = new URLSearchParams(hash.substring(1));
-      const accessToken = params.get("access_token");
-      if (accessToken) {
-        // Clear the hash from the URL
-        window.history.replaceState(null, null, window.location.pathname);
-        handleGoogleCallback(accessToken);
-      }
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+    const state = params.get("state");
+    const error = params.get("error");
+
+    if (error && state === "google-signup") {
+      window.history.replaceState(null, "", window.location.pathname);
+      setError("Google sign-up was cancelled or blocked. Please try again.");
+      return;
+    }
+
+    if (code && state === "google-signup") {
+      window.history.replaceState(null, "", window.location.pathname);
+      handleGoogleCallback(code);
     }
   }, []);
 
-  const handleGoogleCallback = async (accessToken) => {
+  const handleGoogleCallback = async (code) => {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(apiUrl("/api/login/google"), {
+      const data = await apiRequest("/api/login/google", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ access_token: accessToken }),
+        body: JSON.stringify({
+          code,
+          redirect_uri: `${window.location.origin}${window.location.pathname}`,
+        }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Google registration failed");
 
       localStorage.setItem("user", JSON.stringify(data.user));
       if (data.token) localStorage.setItem("token", data.token);
@@ -89,18 +93,12 @@ export default function SignUp() {
   };
 
   const googleLogin = useGoogleLogin({
-    flow: "implicit",
+    flow: "auth-code",
     ux_mode: "redirect",
     redirect_uri: `${window.location.origin}${window.location.pathname}`,
+    state: "google-signup",
     scope: "email profile openid",
-    prompt: "select_account",
-    onSuccess: tokenResponse => {
-      if (tokenResponse.access_token) {
-        handleGoogleCallback(tokenResponse.access_token);
-      } else {
-        setError("Google did not return an access token. Please try again.");
-      }
-    },
+    select_account: true,
     onError: () => {
       setError("Google sign-in failed. Please try again.");
     },
