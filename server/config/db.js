@@ -18,7 +18,10 @@ const connectDB = async () => {
   }
 
   connectionPromise = mongoose
-    .connect(mongoUri)
+    .connect(mongoUri, {
+      serverSelectionTimeoutMS: 5000,
+      bufferCommands: false,
+    })
     .then(() => {
       console.log("MongoDB connected successfully");
       return mongoose.connection;
