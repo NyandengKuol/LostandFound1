@@ -34,8 +34,12 @@ app.get("/", (req, res) => {
 // ── START SERVER ──
 const PORT = process.env.PORT || 4000;
 
-app.listen(PORT, () => {
-  console.log(` Server running on port ${PORT}`);
-  console.log(` Admin credentials: ${process.env.ADMIN_USERNAME} / ${process.env.ADMIN_PASSWORD}`);
-  console.log(` API URL: http://localhost:${PORT}/api`);
-});
+if (process.env.VERCEL !== "1") {
+  app.listen(PORT, () => {
+    console.log(` Server running on port ${PORT}`);
+    console.log(` Admin credentials: ${process.env.ADMIN_USERNAME} / ${process.env.ADMIN_PASSWORD}`);
+    console.log(` API URL: http://localhost:${PORT}/api`);
+  });
+}
+
+module.exports = app;

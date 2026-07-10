@@ -89,6 +89,9 @@ export default function SignUp() {
   };
 
   const googleLogin = useGoogleLogin({
+    flow: "implicit",
+    ux_mode: "redirect",
+    redirect_uri: `${window.location.origin}${window.location.pathname}`,
     scope: "email profile openid",
     prompt: "select_account",
     onSuccess: tokenResponse => {
