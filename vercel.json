@@ -5,7 +5,6 @@
   "outputDirectory": "Project1/dist",
   "functions": {
     "api/[...path].js": {
-      "memory": 512,
       "maxDuration": 15
     }
   },
