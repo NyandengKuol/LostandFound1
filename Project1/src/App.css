@@ -446,25 +446,100 @@ body {
 
 /* ── RESPONSIVE ── */
 @media (max-width: 768px) {
-  .pageContent {
-    margin-top: 80px;
+  /* Mobile navbar is 64px tall */
+  .main-content {
+    padding-top: 64px;
   }
+
+  .pageContent {
+    margin-top: 64px;
+  }
+
+  /* Banner adjustments */
+  .banner {
+    min-height: 40vh;
+  }
+
+  .bannerText {
+    width: 90%;
+    padding: 14px 20px;
+  }
+
+  .bannerText h1 {
+    font-size: clamp(18px, 5vw, 28px);
+  }
+
+  /* Service cards — single column on mobile */
+  .servicecards {
+    flex-direction: column;
+    align-items: center;
+    padding: 12px;
+    gap: 16px;
+  }
+
+  .card {
+    width: 100%;
+    max-width: 480px;
+    padding: 20px;
+  }
+
+  /* Services hero */
+  .servicesHeroOverlay {
+    padding: 40px 16px;
+  }
+
+  /* Contact page */
   .contactContainer {
     grid-template-columns: 1fr;
   }
+
   .row {
     flex-direction: column;
   }
+
   .contactFooter {
     grid-template-columns: 1fr 1fr;
   }
+
   .contactHeader h1 {
     font-size: 30px;
+  }
+
+  .contactHeroOverlay {
+    padding: 40px 20px;
+  }
+
+  /* Section title */
+  .sectionTitle {
+    font-size: 24px;
+    margin: 32px 0 24px;
   }
 }
 
 @media (max-width: 480px) {
+  .main-content {
+    padding-top: 64px;
+  }
+
   .pageContent {
-    margin-top: 70px;
+    margin-top: 64px;
+  }
+
+  .infoPageCard {
+    padding: 24px 16px;
+  }
+
+  .contactFooter {
+    grid-template-columns: 1fr;
+  }
+
+  .contactHeader h1 {
+    font-size: 24px;
+  }
+
+  /* Tighter hero padding */
+  .servicesHeroOverlay,
+  .contactHeroOverlay {
+    padding: 32px 14px;
   }
 }

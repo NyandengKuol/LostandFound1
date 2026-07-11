@@ -1963,3 +1963,95 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ── Smartphone (≤480px) ── */
+@media (max-width: 480px) {
+  .dashboard {
+    padding-top: 64px;
+  }
+
+  .sidebar {
+    padding: 12px;
+    gap: 6px;
+  }
+
+  .sidebarBtn {
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+
+  .sidebarIcon {
+    font-size: 15px;
+  }
+
+  .main {
+    padding: 12px;
+    gap: 16px;
+  }
+
+  .topbar {
+    padding: 10px 14px;
+    border-radius: var(--radius-md);
+  }
+
+  /* Hide username text in topbar on very small screens */
+  .profileButtonText,
+  .userInfo {
+    display: none;
+  }
+
+  .topCenter {
+    margin: 0;
+  }
+
+  /* Stats: full single column on smartphone */
+  .stats {
+    flex-direction: column;
+  }
+
+  .stats .card {
+    min-width: 100%;
+    padding: 14px 16px;
+  }
+
+  /* Notification dropdown: full-width centered */
+  .notifDropdown {
+    width: calc(100vw - 28px);
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  /* Profile dropdown: full-width centered */
+  .profileDropdown {
+    width: calc(100vw - 28px);
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  /* Modal: full screen on mobile */
+  .modal {
+    padding: 10px;
+  }
+
+  .modalContent {
+    padding: 16px;
+    max-height: 90vh;
+    border-radius: var(--radius-md);
+  }
+
+  .statValue {
+    font-size: 20px;
+  }
+
+  .statLabel {
+    font-size: 11px;
+  }
+
+  /* Table: horizontal scroll on small screens */
+  .tableWrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
