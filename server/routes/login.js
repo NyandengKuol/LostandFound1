@@ -7,35 +7,44 @@ const axios = require("axios");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
 
+const escapeRegex = value => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
 // POST /api/login
 router.post("/", async (req, res) => {
   try {
-    const { username, password } = req.body;
+    const login = req.body.username?.trim();
+    const { password } = req.body;
 
-    if (!username || !password) {
+    if (!login || !password) {
       return res.status(400).json({
-        message: "Username and password are required",
+        message: "Username/email and password are required",
       });
     }
 
     // 🔥 Check for ADMIN credentials from .env
     if (
-      username === process.env.ADMIN_USERNAME &&
+      login === process.env.ADMIN_USERNAME &&
       password === process.env.ADMIN_PASSWORD
     ) {
       // Generate a simple token (base64 encoded)
-      const token = Buffer.from(`${username}:${password}`).toString("base64");
+      const token = Buffer.from(`${login}:${password}`).toString("base64");
 
       return res.status(200).json({
         role: "admin",
         token: token,
-        username: username,
+        username: login,
         message: "Admin login successful",
       });
     }
 
     // Regular user login
-    const user = await User.findOne({ username });
+    const loginRegex = new RegExp(`^${escapeRegex(login)}$`, "i");
+    const user = await User.findOne({
+      $or: [
+        { username: loginRegex },
+        { email: loginRegex },
+      ],
+    });
 
     if (!user) {
       return res.status(400).json({

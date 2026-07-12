@@ -7,7 +7,9 @@ const bcrypt = require("bcryptjs");
 // SIGNUP
 router.post("/", async (req, res) => {
   try {
-    const { username, email, password } = req.body;
+    const username = req.body.username?.trim();
+    const email = req.body.email?.trim().toLowerCase();
+    const { password } = req.body;
 
     // validation
     if (!username || !email || !password) {

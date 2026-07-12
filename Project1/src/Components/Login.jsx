@@ -208,10 +208,10 @@ export default function Login() {
             {success && <div className="loginSuccess">{success}</div>}
 
             <div className="loginField">
-              <label>Username</label>
+              <label>Username or Email</label>
               <input
                 autoFocus
-                placeholder="Enter your username"
+                placeholder="Enter your username or email"
                 value={form.username}
                 onChange={e => setForm(p => ({ ...p, username: e.target.value }))}
                 onKeyDown={e => e.key === "Enter" && handleLogin()}
