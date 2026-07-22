@@ -22,19 +22,24 @@ router.post("/", async (req, res) => {
     }
 
     // 🔥 Check for ADMIN credentials from .env
-    if (
-      login === process.env.ADMIN_USERNAME &&
-      password === process.env.ADMIN_PASSWORD
-    ) {
-      // Generate a simple token (base64 encoded)
-      const token = Buffer.from(`${login}:${password}`).toString("base64");
+    const adminUsername = process.env.ADMIN_USERNAME || "admin";
 
-      return res.status(200).json({
-        role: "admin",
-        token: token,
-        username: login,
-        message: "Admin login successful",
-      });
+    if (login === adminUsername) {
+      if (password === process.env.ADMIN_PASSWORD) {
+        // Generate a simple token (base64 encoded)
+        const token = Buffer.from(`${login}:${password}`).toString("base64");
+
+        return res.status(200).json({
+          role: "admin",
+          token: token,
+          username: login,
+          message: "Admin login successful",
+        });
+      } else {
+        return res.status(400).json({
+          message: "Invalid admin password, or ADMIN_PASSWORD is not set in Vercel Environment Variables.",
+        });
+      }
     }
 
     // Regular user login
