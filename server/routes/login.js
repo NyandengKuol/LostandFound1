@@ -80,12 +80,21 @@ router.post("/", async (req, res) => {
       });
     }
 
+    // Generate JWT token for the logged-in user
+    const token = jwt.sign(
+      { id: user._id, email: user.email, role: user.role },
+      process.env.JWT_SECRET || "fallback_secret",
+      { expiresIn: "7d" }
+    );
+
     res.status(200).json({
       message: "Login successful",
+      token,
       user: {
         id: user._id,
         username: user.username,
         email: user.email,
+        avatar: user.avatar || null,
         role: user.role || "user",
       },
     });

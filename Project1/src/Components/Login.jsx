@@ -34,6 +34,7 @@ export default function Login() {
       localStorage.setItem("user", JSON.stringify({ username: data.username || "Admin", role: "admin" }));
     } else {
       localStorage.setItem("user", JSON.stringify(data.user));
+      if (data.token) localStorage.setItem("token", data.token);
       localStorage.removeItem("adminToken");
     }
 
