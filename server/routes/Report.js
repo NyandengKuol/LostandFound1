@@ -74,6 +74,38 @@ router.post("/", async (req, res) => {
   }
 });
 
+// ── USER: EDIT REPORT (within 10 minutes of creation) ──
+router.patch("/:id/edit", async (req, res) => {
+  try {
+    const report = await Report.findById(req.params.id);
+    if (!report) {
+      return res.status(404).json({ message: "Report not found" });
+    }
+
+    // Enforce 10-minute edit window
+    const EDIT_WINDOW_MS = 10 * 60 * 1000;
+    const age = Date.now() - new Date(report.createdAt).getTime();
+    if (age > EDIT_WINDOW_MS) {
+      return res.status(403).json({
+        message: "Edit window has expired. Reports can only be edited within 10 minutes of submission."
+      });
+    }
+
+    // Only allow safe user-facing fields to be updated
+    const allowed = ["title", "description", "location", "dateOccurred", "category", "image", "adminDescription"];
+    const updates = {};
+    allowed.forEach(field => {
+      if (req.body[field] !== undefined) updates[field] = req.body[field];
+    });
+
+    const updated = await Report.findByIdAndUpdate(req.params.id, updates, { new: true });
+    res.json(updated);
+  } catch (err) {
+    console.error("Edit report error:", err);
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // ── CLAIM ITEM (sets status → pending) ──────────────────
 router.patch("/:id/claim", async (req, res) => {
   try {

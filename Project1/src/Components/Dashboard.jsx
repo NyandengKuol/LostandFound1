@@ -98,6 +98,23 @@ export default function Dashboard() {
   const notifRef = useRef(null);
   const profileRef = useRef(null);
 
+  // Inactivity timeout refs
+  const inactivityWarningRef = useRef(null);
+  const countdownIntervalRef = useRef(null);
+  const resetInactivityTimerRef = useRef(null);
+
+  // Inactivity warning state
+  const [showTimeoutWarning, setShowTimeoutWarning] = useState(false);
+  const [warningCountdown, setWarningCountdown] = useState(120);
+
+  // Edit modal state
+  const [editTarget, setEditTarget] = useState(null);
+  const [editForm, setEditForm] = useState(emptyForm);
+  const [editSubmitting, setEditSubmitting] = useState(false);
+
+  // Live clock tick for edit countdown display
+  const [now, setNow] = useState(() => Date.now());
+
   // Helper function to truncate text
   const truncateText = (text, maxLength = 60) => {
     if (!text) return '';
@@ -141,6 +158,50 @@ export default function Dashboard() {
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  /* ── INACTIVITY AUTO-LOGOUT ── */
+  const INACTIVITY_MS = 30 * 60 * 1000; // 30 minutes
+  const WARNING_MS    =  2 * 60 * 1000; // warn 2 min before
+
+  useEffect(() => {
+    const reset = () => {
+      clearTimeout(inactivityWarningRef.current);
+      clearInterval(countdownIntervalRef.current);
+      setShowTimeoutWarning(false);
+
+      inactivityWarningRef.current = setTimeout(() => {
+        let secs = Math.floor(WARNING_MS / 1000);
+        setWarningCountdown(secs);
+        setShowTimeoutWarning(true);
+        countdownIntervalRef.current = setInterval(() => {
+          secs -= 1;
+          setWarningCountdown(secs);
+          if (secs <= 0) {
+            clearInterval(countdownIntervalRef.current);
+            localStorage.clear();
+            navigate("/login");
+          }
+        }, 1000);
+      }, INACTIVITY_MS - WARNING_MS);
+    };
+
+    resetInactivityTimerRef.current = reset;
+    const events = ["mousemove", "mousedown", "keydown", "scroll", "touchstart"];
+    events.forEach(e => window.addEventListener(e, reset, { passive: true }));
+    reset();
+
+    return () => {
+      events.forEach(e => window.removeEventListener(e, reset));
+      clearTimeout(inactivityWarningRef.current);
+      clearInterval(countdownIntervalRef.current);
+    };
+  }, [navigate]);
+
+  /* ── LIVE CLOCK TICK (edit countdown) ── */
+  useEffect(() => {
+    const tick = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(tick);
   }, []);
 
   /* ── IMAGE UPLOAD ── */
@@ -312,6 +373,68 @@ export default function Dashboard() {
     }
   };
 
+  /* ── EDIT HELPERS (10-minute window) ── */
+  const EDIT_WINDOW_MS = 10 * 60 * 1000;
+
+  const getEditTimeLeft = (item) => {
+    const created = new Date(item.createdAt).getTime();
+    return EDIT_WINDOW_MS - (now - created);
+  };
+
+  const isEditable = (item) => {
+    if (isAdmin) return false;
+    const isOwner = item.owner?.email
+      ? item.owner.email === user.email
+      : item.owner?.name === user.username;
+    return isOwner && getEditTimeLeft(item) > 0;
+  };
+
+  const formatEditCountdown = (ms) => {
+    const secs = Math.max(0, Math.floor(ms / 1000));
+    return `${Math.floor(secs / 60)}:${(secs % 60).toString().padStart(2, "0")}`;
+  };
+
+  const handleEditImageChange = (file) => {
+    if (!file) { setEditForm(f => ({ ...f, image: "" })); return; }
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const img = new Image();
+      img.src = reader.result;
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const MAX_W = 800, MAX_H = 600;
+        let { width: w, height: h } = img;
+        if (w > h) { if (w > MAX_W) { h *= MAX_W / w; w = MAX_W; } }
+        else        { if (h > MAX_H) { w *= MAX_H / h; h = MAX_H; } }
+        canvas.width = w; canvas.height = h;
+        canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+        setEditForm(f => ({ ...f, image: canvas.toDataURL("image/jpeg", 0.7) }));
+      };
+    };
+    reader.readAsDataURL(file);
+  };
+
+  /* ── SUBMIT EDIT ── */
+  const submitEdit = async () => {
+    if (!editForm.title || !editForm.description || !editForm.location || !editForm.dateOccurred) {
+      alert("Please fill in all required fields.");
+      return;
+    }
+    setEditSubmitting(true);
+    try {
+      const res = await fetch(`${API}/${editTarget._id}/edit`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editForm)
+      });
+      if (!res.ok) { const e = await res.json(); throw new Error(e.message); }
+      await fetchItems();
+      addNotification(`Report edited: ${editForm.title}`);
+      setEditTarget(null);
+    } catch (e) { alert("Error: " + e.message); }
+    finally { setEditSubmitting(false); }
+  };
+
   /* ── CLAIM ── */
   const submitClaim = async () => {
     if (!claimerInfo.name || !claimerInfo.phone || !claimerInfo.description) {
@@ -375,6 +498,69 @@ export default function Dashboard() {
   ];
 
   const currentSortLabel = dropdownItems.find(item => item.key === sortOrder)?.label || "All";
+
+  /* ── EDIT MODAL ── */
+  const EditModal = ({ item, onClose }) => (
+    <div className="modal" onClick={onClose}>
+      <div className="modalBox" onClick={e => e.stopPropagation()}>
+        <h3>✏️ Edit Report</h3>
+        <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 4 }}>
+          ⏱ Edit closes in:{" "}
+          <strong style={{ color: getEditTimeLeft(item) < 60000 ? "#ef4444" : "var(--accent-blue)" }}>
+            {formatEditCountdown(getEditTimeLeft(item))}
+          </strong>
+        </p>
+
+        <span className="fieldLabel">Title *</span>
+        <input placeholder="e.g. Black laptop bag"
+          value={editForm.title}
+          onChange={e => setEditForm(f => ({ ...f, title: e.target.value }))} />
+
+        <span className="fieldLabel">Description *</span>
+        <textarea placeholder="Describe the item in detail..."
+          value={editForm.description}
+          onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))} />
+
+        <span className="fieldLabel">Private Admin Details</span>
+        <textarea placeholder="Extra details only admins can see..."
+          value={editForm.adminDescription}
+          onChange={e => setEditForm(f => ({ ...f, adminDescription: e.target.value }))} />
+
+        <span className="fieldLabel">Location *</span>
+        <input placeholder="Where was it lost/found?"
+          value={editForm.location}
+          onChange={e => setEditForm(f => ({ ...f, location: e.target.value }))} />
+
+        <span className="fieldLabel">Date *</span>
+        <input type="date"
+          value={editForm.dateOccurred}
+          onChange={e => setEditForm(f => ({ ...f, dateOccurred: e.target.value }))} />
+
+        <span className="fieldLabel">Category</span>
+        <select value={editForm.category}
+          onChange={e => setEditForm(f => ({ ...f, category: e.target.value }))}>
+          {["Electronics","Bags","Clothing","Documents","Keys","Wallet","Jewellery","Other"].map(c =>
+            <option key={c}>{c}</option>)}
+        </select>
+
+        <span className="fieldLabel">Photo (Optional)</span>
+        {editForm.image ? (
+          <div className="previewWrap">
+            <img src={editForm.image} className="previewImg" alt="preview" />
+            <button className="removeImg" onClick={() => setEditForm(f => ({ ...f, image: "" }))}>✕ Remove</button>
+          </div>
+        ) : (
+          <input type="file" accept="image/*"
+            onChange={e => handleEditImageChange(e.target.files[0])} />
+        )}
+
+        <button className="submitBtn" disabled={editSubmitting} onClick={submitEdit}>
+          {editSubmitting ? "Saving…" : "Save Changes"}
+        </button>
+        <button className="cancelBtn" onClick={onClose}>Cancel</button>
+      </div>
+    </div>
+  );
 
   /* ── FORM MODAL ── */
   const FormModal = ({ type, onClose }) => (
@@ -530,6 +716,27 @@ export default function Dashboard() {
           <div className="claimedNote">✅ This item has been claimed</div>
         )}
 
+        {isEditable(item) && (
+          <button
+            className="editBtn detailEditBtn"
+            onClick={() => {
+              setEditTarget(item);
+              setEditForm({
+                title: item.title,
+                description: item.description,
+                location: item.location,
+                dateOccurred: item.dateOccurred ? new Date(item.dateOccurred).toISOString().split("T")[0] : "",
+                category: item.category || "Other",
+                image: item.image || "",
+                adminDescription: item.adminDescription || "",
+                type: item.type
+              });
+              onClose();
+            }}
+          >
+            ✏️ Edit Report ({formatEditCountdown(getEditTimeLeft(item))})
+          </button>
+        )}
         <button className="cancelBtn" onClick={onClose}>Close</button>
       </div>
     </div>
@@ -703,6 +910,43 @@ export default function Dashboard() {
     </div>
   );
 
+  /* ── TIMEOUT WARNING MODAL ── */
+  const TimeoutWarningModal = () => (
+    <div className="modal timeoutModal">
+      <div className="modalBox timeoutBox" onClick={e => e.stopPropagation()}>
+        <div style={{ fontSize: 54, textAlign: "center", lineHeight: 1 }}>⏰</div>
+        <h3 style={{ textAlign: "center", margin: 0 }}>Still there?</h3>
+        <p style={{ color: "var(--text-muted)", textAlign: "center", fontSize: 14, margin: 0 }}>
+          You've been inactive. You'll be logged out in
+        </p>
+        <div style={{
+          fontSize: 56,
+          fontWeight: 800,
+          textAlign: "center",
+          color: warningCountdown <= 30 ? "#ef4444" : "var(--accent-blue)",
+          fontVariantNumeric: "tabular-nums",
+          letterSpacing: 3,
+          transition: "color 0.4s"
+        }}>
+          {Math.floor(warningCountdown / 60)}:{(warningCountdown % 60).toString().padStart(2, "0")}
+        </div>
+        <button
+          className="submitBtn"
+          onClick={() => resetInactivityTimerRef.current?.()}
+          style={{ marginTop: 4 }}
+        >
+          ✅ Stay Logged In
+        </button>
+        <button
+          className="cancelBtn"
+          onClick={() => { localStorage.clear(); navigate("/login"); }}
+        >
+          Log Out Now
+        </button>
+      </div>
+    </div>
+  );
+
   return (
     <div className="dashboard">
 
@@ -714,12 +958,16 @@ export default function Dashboard() {
         </div>
 
         <div className="sidebarNav">
-          <button className="sidebarBtn" onClick={() => { setForm({...emptyForm, type:"lost"}); setShowLostForm(true); }}>
-            <span className="sidebarIcon">➕</span> Report Lost
-          </button>
-          <button className="sidebarBtn" onClick={() => { setForm({...emptyForm, type:"found"}); setShowFoundForm(true); }}>
-            <span className="sidebarIcon">🔍</span> Report Found
-          </button>
+          {!isAdmin && (
+            <>
+              <button className="sidebarBtn" onClick={() => { setForm({...emptyForm, type:"lost"}); setShowLostForm(true); }}>
+                <span className="sidebarIcon">➕</span> Report Lost
+              </button>
+              <button className="sidebarBtn" onClick={() => { setForm({...emptyForm, type:"found"}); setShowFoundForm(true); }}>
+                <span className="sidebarIcon">🔍</span> Report Found
+              </button>
+            </>
+          )}
         </div>
 
         {isAdmin && (
@@ -1051,6 +1299,27 @@ export default function Dashboard() {
                         Claim Item
                       </button>
                     )}
+                    {isEditable(item) && (
+                      <button
+                        className="editBtn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditTarget(item);
+                          setEditForm({
+                            title: item.title,
+                            description: item.description,
+                            location: item.location,
+                            dateOccurred: item.dateOccurred ? new Date(item.dateOccurred).toISOString().split("T")[0] : "",
+                            category: item.category || "Other",
+                            image: item.image || "",
+                            adminDescription: item.adminDescription || "",
+                            type: item.type
+                          });
+                        }}
+                      >
+                        ✏️ Edit ({formatEditCountdown(getEditTimeLeft(item))})
+                      </button>
+                    )}
                   </div>
                 );
               })}
@@ -1062,7 +1331,9 @@ export default function Dashboard() {
       {/* ── MODALS ── */}
       {showLostForm && FormModal({ type: "lost", onClose: () => setShowLostForm(false) })}
       {showFoundForm && FormModal({ type: "found", onClose: () => setShowFoundForm(false) })}
+      {editTarget && EditModal({ item: editTarget, onClose: () => setEditTarget(null) })}
       {selected && DetailModal({ item: selected, onClose: () => setSelected(null) })}
+      {showTimeoutWarning && TimeoutWarningModal()}
       {selectedImage && (
         <div className="modal imageModal" onClick={() => setSelectedImage(null)}>
           <div className="imageModalBox" onClick={e => e.stopPropagation()}>
