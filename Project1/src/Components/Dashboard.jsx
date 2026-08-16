@@ -5,6 +5,7 @@ import { apiUrl } from "../api";
 import "./Dashboard.css";
 
 const API = apiUrl("/api/reports");
+const NOTIF_API = apiUrl("/api/notifications");
 
 const emptyForm = {
   title: "", description: "", location: "",
@@ -150,36 +151,47 @@ export default function Dashboard() {
     if (saved) setSeenNotifications(readStoredList("seenNotifications"));
   }, []);
 
-  /* ── CONSUME PENDING CLAIMER RESOLVE NOTIFICATIONS ── */
-  useEffect(() => {
+  /* ── FETCH SERVER NOTIFICATIONS ── */
+  const fetchServerNotifications = async () => {
     if (!user?.username && !user?.email) return;
-    const keysToRemove = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (!key || !key.startsWith("resolve_notify_")) continue;
-      try {
-        const data = JSON.parse(localStorage.getItem(key) || "");
-        if (!data) continue;
-        const claimerName = (data.claimer?.name || "").toLowerCase();
-        const myName = (user.username || "").toLowerCase();
-        const myEmail = (user.email || "").toLowerCase();
-        const isMatch =
-          (claimerName && myName && claimerName === myName) ||
-          (data.claimer?.email && myEmail && data.claimer.email === myEmail);
-        if (isMatch) {
-          const parts = [
-            `✅ Your claim for "${data.itemTitle}" has been resolved!`,
-            `📍 Pickup location: ${data.pickupLocation}`,
-          ];
-          if (data.message) parts.push(`💬 ${data.message}`);
-          addNotification(parts.join(" — "));
-          keysToRemove.push(key);
-        }
-      } catch {
-        keysToRemove.push(key);
+    try {
+      const query = user.email ? `email=${encodeURIComponent(user.email)}` : `name=${encodeURIComponent(user.username)}`;
+      const res = await fetch(`${NOTIF_API}?${query}`);
+      if (res.ok) {
+        const data = await res.json();
+        // Convert server notifications to the local format and merge
+        const serverNotifs = data.map(sn => ({
+          id: sn._id, // use MongoDB _id
+          message: sn.message,
+          timestamp: sn.createdAt,
+          seen: sn.seen,
+          isServer: true
+        }));
+        
+        setNotifications(prev => {
+          // Merge avoiding duplicates
+          const existingIds = new Set(prev.map(n => n.id));
+          const newServerNotifs = serverNotifs.filter(sn => !existingIds.has(sn.id));
+          
+          if (newServerNotifs.length > 0) {
+            const updated = [...newServerNotifs, ...prev].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            // Only store local ones in localStorage
+            localStorage.setItem("dashboard_notifications", JSON.stringify(updated.filter(n => !n.isServer)));
+            return updated;
+          }
+          return prev;
+        });
       }
+    } catch (e) {
+      console.error("Failed to fetch server notifications", e);
     }
-    keysToRemove.forEach(k => localStorage.removeItem(k));
+  };
+
+  useEffect(() => {
+    fetchServerNotifications();
+    // Poll every 30 seconds for new server notifications
+    const interval = setInterval(fetchServerNotifications, 30000);
+    return () => clearInterval(interval);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -335,29 +347,55 @@ export default function Dashboard() {
     });
   };
 
-  const markAsSeen = (id) => {
+  const markAsSeen = async (id) => {
     setNotifications(prev => {
       const updated = prev.map((n, index) => {
         const item = normalizeNotification(n, index);
-        return item.id === id ? { ...item, seen: true } : item;
+        // keep isServer flag if present
+        const isServer = n.isServer || false;
+        return item.id === id ? { ...item, seen: true, isServer } : { ...item, isServer };
       });
-      localStorage.setItem("dashboard_notifications", JSON.stringify(updated));
+      localStorage.setItem("dashboard_notifications", JSON.stringify(updated.filter(n => !n.isServer)));
       return updated;
     });
-    setSeenNotifications(prev => {
-      const updated = Array.from(new Set([...prev, id]));
-      localStorage.setItem("seenNotifications", JSON.stringify(updated));
-      return updated;
-    });
+    
+    // Check if it's a server notification
+    const notif = notifications.find(n => n.id === id);
+    if (notif && notif.isServer) {
+      try {
+        await fetch(`${NOTIF_API}/${id}/seen`, { method: "PATCH" });
+      } catch (e) {
+        console.error("Failed to mark server notification seen", e);
+      }
+    } else {
+      setSeenNotifications(prev => {
+        const updated = Array.from(new Set([...prev, id]));
+        localStorage.setItem("seenNotifications", JSON.stringify(updated));
+        return updated;
+      });
+    }
   };
 
-  const markAllAsSeen = () => {
+  const markAllAsSeen = async () => {
     const allIds = notifications.map((n, index) => normalizeNotification(n, index).id);
     setNotifications(prev => {
-      const updated = prev.map((n, index) => ({ ...normalizeNotification(n, index), seen: true }));
-      localStorage.setItem("dashboard_notifications", JSON.stringify(updated));
+      const updated = prev.map((n, index) => ({ ...normalizeNotification(n, index), seen: true, isServer: n.isServer || false }));
+      localStorage.setItem("dashboard_notifications", JSON.stringify(updated.filter(n => !n.isServer)));
       return updated;
     });
+    
+    if (user?.email) {
+      try {
+        await fetch(`${NOTIF_API}/mark-all-seen`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: user.email })
+        });
+      } catch (e) {
+        console.error("Failed to mark all server notifications seen", e);
+      }
+    }
+    
     setSeenNotifications(prev => {
       const updated = Array.from(new Set([...prev, ...allIds]));
       localStorage.setItem("seenNotifications", JSON.stringify(updated));
@@ -415,7 +453,8 @@ export default function Dashboard() {
   /* ── RESOLVE WITH PICKUP POPUP ── */
   const handleResolve = (item) => {
     setResolveTarget(item);
-    setResolvePickupLocation(item.location || "");
+    // User requested to not prefill the pickup location with the item's original location
+    setResolvePickupLocation("");
     setResolveMessage("");
   };
 
@@ -451,18 +490,9 @@ export default function Dashboard() {
       }
       if (!res.ok) { const e = await res.json(); throw new Error(e.message); }
 
-      // Write a pickup notification for the claimer to consume
-      localStorage.setItem(
-        `resolve_notify_${resolveTarget._id}`,
-        JSON.stringify({
-          itemId: resolveTarget._id,
-          itemTitle: resolveTarget.title,
-          pickupLocation: resolvePickupLocation.trim(),
-          message: resolveMessage.trim(),
-          claimer: resolveTarget.claimer,
-          timestamp: new Date().toISOString(),
-        })
-      );
+      // We no longer write a pickup notification to local storage here,
+      // because the backend `/resolve` endpoint creates a server-side notification
+      // for the claimer and also sends them an email.
 
       await fetchItems();
       addNotification(`📬 Pickup location sent to claimer for: "${resolveTarget.title}"`);

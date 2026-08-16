@@ -7,6 +7,7 @@ const signupRoute = require("./routes/signup");
 const loginRoute = require("./routes/login");
 const reportRoute = require("./routes/Report");
 const contactRoute = require("./routes/contact");
+const notificationsRoute = require("./routes/notifications");
 
 const app = express();
 
@@ -34,6 +35,7 @@ app.use("/api/signup", signupRoute);
 app.use("/api/login", loginRoute);
 app.use("/api/reports", reportRoute);
 app.use("/api/contact", contactRoute);
+app.use("/api/notifications", notificationsRoute);
 
 app.use("/api", (req, res) => {
   res.status(404).json({ message: "API route not found" });

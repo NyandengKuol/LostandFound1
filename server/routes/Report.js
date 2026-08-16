@@ -1,6 +1,8 @@
 const express = require("express");
 const router = express.Router();
 const Report = require("../models/Report");
+const User = require("../models/user");
+const Notification = require("../models/Notification");
 const adminAuth = require("../middleware/adminAuth");
 const { SUPPORT_EMAIL, sendEmail } = require("../utils/mailer");
 require("dotenv").config();
@@ -202,30 +204,81 @@ router.patch("/:id/resolve", adminAuth, async (req, res) => {
       return res.status(404).json({ message: "Report not found" });
     }
 
-    // Send pickup notification email (support copy + claimer reference)
-    if (pickupLocation) {
-      const claimer = updated.claimer || {};
-      const emailLines = [
-        `Item "${updated.title}" has been marked as RESOLVED.`,
-        "",
-        `Claimer: ${claimer.name || "Unknown"}`,
-        claimer.phone ? `Phone: ${claimer.phone}` : "",
-        "",
-        `📍 Pickup Location: ${pickupLocation}`,
-        message ? `💬 Admin Message: ${message}` : "",
-        "",
-        `Category: ${updated.category || "Other"}`,
-        `Original Location: ${updated.location}`,
-        `Resolved at: ${new Date().toLocaleString()}`,
-      ].filter(Boolean).join("\n");
+    // ── Look up claimer's registered email by their username ──
+    const claimerName = updated.claimer?.name || "";
+    let claimerEmail = null;
 
+    if (claimerName) {
+      try {
+        const claimerUser = await User.findOne({
+          username: { $regex: `^${claimerName}$`, $options: "i" },
+        });
+        if (claimerUser?.email) claimerEmail = claimerUser.email;
+      } catch (lookupErr) {
+        console.error("Claimer lookup error:", lookupErr);
+      }
+    }
+
+    // ── Build notification message ──
+    const notifParts = [
+      `✅ Your claim for "${updated.title}" has been resolved!`,
+      pickupLocation ? `📍 Pickup location: ${pickupLocation}` : "",
+      message ? `💬 ${message}` : "",
+    ].filter(Boolean);
+    const notifMessage = notifParts.join(" — ");
+
+    // ── Create server-side notification in DB ──
+    if (claimerEmail || claimerName) {
+      await Notification.create({
+        recipientEmail: claimerEmail || `${claimerName.toLowerCase().replace(/\s+/g, "")}@unknown.local`,
+        recipientName: claimerName,
+        message: notifMessage,
+        type: "resolve",
+        meta: {
+          itemId: updated._id.toString(),
+          itemTitle: updated.title,
+          pickupLocation: pickupLocation || "",
+          adminMessage: message || "",
+        },
+      });
+    }
+
+    // ── Send email to claimer ──
+    const emailTo = claimerEmail || SUPPORT_EMAIL;
+    const emailSubject = `Your item "${updated.title}" is ready for pickup!`;
+    const emailText = [
+      `Hi ${claimerName || "there"},`,
+      "",
+      `Great news! Your claim for the item "${updated.title}" has been resolved.`,
+      "",
+      pickupLocation ? `📍 Pickup Location: ${pickupLocation}` : "",
+      message ? `💬 Message from admin: ${message}` : "",
+      "",
+      `Item Details:`,
+      `  Title: ${updated.title}`,
+      `  Category: ${updated.category || "Other"}`,
+      `  Original location reported: ${updated.location}`,
+      "",
+      "Please visit the pickup location at your earliest convenience.",
+      "",
+      "— Lost & Found Team",
+    ].filter(line => line !== undefined).join("\n");
+
+    sendEmail({
+      to: emailTo,
+      subject: emailSubject,
+      text: emailText,
+    }).catch((emailError) => {
+      console.error("Resolve notification email error:", emailError);
+    });
+
+    // Also CC support with a summary
+    if (claimerEmail && claimerEmail !== SUPPORT_EMAIL) {
       sendEmail({
         to: SUPPORT_EMAIL,
-        subject: `[Resolved] Item pickup ready: "${updated.title}"`,
-        text: emailLines,
-      }).catch((emailError) => {
-        console.error("Resolve notification email error:", emailError);
-      });
+        subject: `[Admin Copy] Resolved: "${updated.title}" — pickup sent to ${claimerEmail}`,
+        text: emailText,
+      }).catch(() => {});
     }
 
     res.json(updated);
