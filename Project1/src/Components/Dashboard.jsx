@@ -116,7 +116,7 @@ export default function Dashboard() {
   // Resolve popup state
   const [resolveTarget, setResolveTarget] = useState(null);
   const [resolvePickupLocation, setResolvePickupLocation] = useState("");
-  const [resolveMessage, setResolveMessage] = useState("");
+  const [resolveInstructions, setResolveInstructions] = useState("");
   const [resolveSubmitting, setResolveSubmitting] = useState(false);
 
   // Live clock tick for edit countdown display
@@ -462,7 +462,7 @@ export default function Dashboard() {
     setResolveTarget(item);
     // User requested to not prefill the pickup location with the item's original location
     setResolvePickupLocation("");
-    setResolveMessage("");
+    setResolveInstructions("");
   };
 
   const submitResolve = async () => {
@@ -485,7 +485,7 @@ export default function Dashboard() {
         },
         body: JSON.stringify({
           pickupLocation: resolvePickupLocation.trim(),
-          message: resolveMessage.trim(),
+          pickupInstructions: resolveInstructions.trim(),
         }),
       });
       if (res.status === 401 || res.status === 403) {
@@ -505,7 +505,7 @@ export default function Dashboard() {
       addNotification(`📬 Pickup location sent to claimer for: "${resolveTarget.title}"`);
       setResolveTarget(null);
       setResolvePickupLocation("");
-      setResolveMessage("");
+      setResolveInstructions("");
       // Close detail modal if open
       setSelected(null);
     } catch (e) {
@@ -587,7 +587,7 @@ export default function Dashboard() {
       const res = await fetch(`${API}/${claimTarget._id}/claim`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ claimer: claimerInfo })
+        body: JSON.stringify({ claimer: { ...claimerInfo, email: user.email || "" } })
       });
       if (!res.ok) { const e = await res.json(); throw new Error(e.message); }
       await fetchItems();
@@ -801,7 +801,9 @@ export default function Dashboard() {
         )}
 
         <div className="detailMeta">
-          <span>📍 {item.location}</span>
+          <span>📍 Found Location: {item.location}</span>
+          {item.pickupLocation && <span>🏢 Pickup Location: {item.pickupLocation}</span>}
+          {item.pickupInstructions && <span style={{display: 'block', marginTop: '10px'}}>💬 Collection Instructions: {item.pickupInstructions}</span>}
           <span>📅 {item.dateOccurred ? new Date(item.dateOccurred).toLocaleDateString() : "—"}</span>
           <span>🏷️ {item.category || "Other"}</span>
           {item.owner?.name && <span>👤 Reported by {item.owner.name}</span>}
@@ -1373,7 +1375,8 @@ export default function Dashboard() {
                     </div>
 
                     <p className="itemDesc">{descriptionPreview}</p>
-                    <div className="location">📍 {item.location}</div>
+                    <div className="location">📍 Found at: {item.location}</div>
+                    {item.pickupLocation && <div className="location">🏢 Pickup: {item.pickupLocation}</div>}
 
                     {isAdmin && item.claimer?.name && (
                       <div className="claimerInfo">
@@ -1529,12 +1532,12 @@ export default function Dashboard() {
             </div>
 
             <div className="resolveFormGroup">
-              <label className="resolveLabel">💬 Additional Message (Optional)</label>
+              <label className="resolveLabel">💬 Collection Instructions (Optional)</label>
               <textarea
                 className="resolveTextarea"
                 placeholder="e.g. Please bring your ID. Available Mon–Fri 9am–5pm."
-                value={resolveMessage}
-                onChange={e => setResolveMessage(e.target.value)}
+                value={resolveInstructions}
+                onChange={e => setResolveInstructions(e.target.value)}
                 rows={3}
               />
             </div>
@@ -1542,7 +1545,7 @@ export default function Dashboard() {
             <div className="resolvePreview">
               <span className="resolvePreviewLabel">Preview notification:</span>
               <p className="resolvePreviewText">
-                ✅ Your claim for &quot;{resolveTarget.title}&quot; has been resolved! — 📍 Pickup location: {resolvePickupLocation || "(enter location above)"}{resolveMessage ? ` — 💬 ${resolveMessage}` : ""}
+                ✅ Your claim for &quot;{resolveTarget.title}&quot; has been resolved! — 📍 Pickup location: {resolvePickupLocation || "(enter location above)"}{resolveInstructions ? ` — 💬 ${resolveInstructions}` : ""}
               </p>
             </div>
 

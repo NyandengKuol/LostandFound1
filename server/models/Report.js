@@ -40,6 +40,14 @@ const reportSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    pickupLocation: {
+      type: String,
+      default: "",
+    },
+    pickupInstructions: {
+      type: String,
+      default: "",
+    },
     owner: {
       name: {
         type: String,
@@ -67,10 +75,13 @@ const reportSchema = new mongoose.Schema(
         type: String,
         default: "",
       },
+      email: {
+        type: String,
+        default: "",
+      },
     },
   },
   { timestamps: true }
 );
-
 
 module.exports = mongoose.models.Report || mongoose.model("Report", reportSchema);

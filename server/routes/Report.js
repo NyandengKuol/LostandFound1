@@ -192,11 +192,15 @@ router.patch("/:id/reject", adminAuth, async (req, res) => {
 // ── ADMIN: RESOLVE ──
 router.patch("/:id/resolve", adminAuth, async (req, res) => {
   try {
-    const { pickupLocation, message } = req.body || {};
+    const { pickupLocation, pickupInstructions } = req.body || {};
 
     const updated = await Report.findByIdAndUpdate(
       req.params.id,
-      { status: "resolved" },
+      { 
+        status: "resolved",
+        pickupLocation: pickupLocation || "",
+        pickupInstructions: pickupInstructions || ""
+      },
       { new: true }
     );
 
@@ -204,11 +208,11 @@ router.patch("/:id/resolve", adminAuth, async (req, res) => {
       return res.status(404).json({ message: "Report not found" });
     }
 
-    // ── Look up claimer's registered email by their username ──
+    // ── Look up claimer's registered email ──
     const claimerName = updated.claimer?.name || "";
-    let claimerEmail = null;
+    let claimerEmail = updated.claimer?.email || null;
 
-    if (claimerName) {
+    if (!claimerEmail && claimerName) {
       try {
         const claimerUser = await User.findOne({
           username: { $regex: `^${claimerName}$`, $options: "i" },
@@ -223,24 +227,28 @@ router.patch("/:id/resolve", adminAuth, async (req, res) => {
     const notifParts = [
       `✅ Your claim for "${updated.title}" has been resolved!`,
       pickupLocation ? `📍 Pickup location: ${pickupLocation}` : "",
-      message ? `💬 ${message}` : "",
+      pickupInstructions ? `💬 ${pickupInstructions}` : "",
     ].filter(Boolean);
     const notifMessage = notifParts.join(" — ");
 
     // ── Create server-side notification in DB ──
     if (claimerEmail || claimerName) {
-      await Notification.create({
-        recipientEmail: claimerEmail || `${claimerName.toLowerCase().replace(/\s+/g, "")}@unknown.local`,
-        recipientName: claimerName,
-        message: notifMessage,
-        type: "resolve",
-        meta: {
-          itemId: updated._id.toString(),
-          itemTitle: updated.title,
-          pickupLocation: pickupLocation || "",
-          adminMessage: message || "",
-        },
-      });
+      try {
+        await Notification.create({
+          recipientEmail: claimerEmail || `${claimerName.toLowerCase().replace(/\s+/g, "")}@unknown.local`,
+          recipientName: claimerName,
+          message: notifMessage,
+          type: "resolve",
+          meta: {
+            itemId: updated._id.toString(),
+            itemTitle: updated.title,
+            pickupLocation: pickupLocation || "",
+            pickupInstructions: pickupInstructions || "",
+          },
+        });
+      } catch (notifErr) {
+        console.error("Failed to create notification:", notifErr);
+      }
     }
 
     // ── Send email to claimer ──
@@ -252,7 +260,7 @@ router.patch("/:id/resolve", adminAuth, async (req, res) => {
       `Great news! Your claim for the item "${updated.title}" has been resolved.`,
       "",
       pickupLocation ? `📍 Pickup Location: ${pickupLocation}` : "",
-      message ? `💬 Message from admin: ${message}` : "",
+      pickupInstructions ? `💬 Collection Instructions: ${pickupInstructions}` : "",
       "",
       `Item Details:`,
       `  Title: ${updated.title}`,
@@ -268,6 +276,8 @@ router.patch("/:id/resolve", adminAuth, async (req, res) => {
       to: emailTo,
       subject: emailSubject,
       text: emailText,
+    }).then(info => {
+      console.log(`Resolution email successfully sent to ${emailTo}`, info?.messageId || "");
     }).catch((emailError) => {
       console.error("Resolve notification email error:", emailError);
     });
