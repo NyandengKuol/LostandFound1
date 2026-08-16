@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { Mail, MessageCircle, Zap, Lock, Heart } from "lucide-react"
 import { apiUrl } from "../api"
 import contactBg from "../assets/contact-bg.png"
 
@@ -109,7 +110,7 @@ export default function Contacts() {
           </div>
 
           <div className="infoCard">
-            <h3>💬 Quick Chat</h3>
+            <h3>Quick Chat</h3>
             <p>
               Want to chat directly? Send us an email at{" "}
               <a href={`mailto:${SUPPORT_EMAIL}`} style={{ fontWeight: 700, color: "#1976d2" }}>
@@ -134,8 +135,8 @@ export default function Contacts() {
             <div className={`formStatus ${status.type}`}>
               <span>{status.text}</span>
               {status.type === "error" && (
-                <button type="button" onClick={openMailto} className="mailtoFallback">
-                  📧 Open Email App
+                <button type="button" onClick={openMailto} className="mailtoFallback" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                  <Mail size={16} /> Open Email App
                 </button>
               )}
             </div>
@@ -197,10 +198,10 @@ export default function Contacts() {
 
       {/* FOOTER STRIP */}
       <div className="contactFooter">
-        <div>⚡ Fast Response</div>
-        <div>🔒 Secure & Private</div>
-        <div>💬 Expert Support</div>
-        <div>❤️ Student First</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Zap size={16} /> Fast Response</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Lock size={16} /> Secure & Private</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><MessageCircle size={16} /> Expert Support</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Heart size={16} /> Student First</div>
       </div>
 
     </section>

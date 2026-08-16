@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { ClipboardList, PackageSearch, HandHeart, ArrowRight } from 'lucide-react';
 import ServiceCard from './Servicecards';
 import servicesBg from '../assets/services-bg.png';
 
@@ -20,7 +21,7 @@ export default function Services() {
       <section className="services-section">
         <div className="servicecards">
           <ServiceCard 
-            frontIcon="📋"
+            frontIcon={<ClipboardList size={36} />}
             frontTitle="Report Lost Items"
             frontDesc="Report belongings you've lost and provide useful details to help identify them."
             backTitle="Report Lost Items"
@@ -30,7 +31,7 @@ export default function Services() {
           />
 
           <ServiceCard
-            frontIcon="🔍"
+            frontIcon={<PackageSearch size={36} />}
             frontTitle="Find & Retrieve Items"
             frontDesc="Search through found items and submit a claim to recover your belongings."
             backTitle="Find & Retrieve Items"
@@ -40,7 +41,7 @@ export default function Services() {
           />
 
           <ServiceCard
-            frontIcon="🤝"
+            frontIcon={<HandHeart size={36} />}
             frontTitle="Community Support"
             frontDesc="Help reunite people with their lost belongings."
             backTitle="Community Support"
@@ -65,13 +66,13 @@ export default function Services() {
             <h3 className="step-title">Report</h3>
             <p className="step-desc">Submit details about a lost or found item, including its description, location, date, and image.</p>
           </div>
-          <div className="step-arrow">→</div>
+          <div className="step-arrow"><ArrowRight size={24} /></div>
           <div className="step-card">
             <div className="step-number">02</div>
             <h3 className="step-title">Search & Verify</h3>
             <p className="step-desc">Browse reported items to find potential matches. Claims are reviewed and verified to help ensure that items are returned to their rightful owners.</p>
           </div>
-          <div className="step-arrow">→</div>
+          <div className="step-arrow"><ArrowRight size={24} /></div>
           <div className="step-card">
             <div className="step-number">03</div>
             <h3 className="step-title">Recover</h3>

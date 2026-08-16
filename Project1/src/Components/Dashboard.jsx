@@ -2,6 +2,12 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "./ThemeContext";
 import { apiUrl } from "../api";
+import {
+  Search, SlidersHorizontal, PlusCircle, PackagePlus, Bell, MapPin, Building,
+  Calendar, Tag, User, Phone, MessageSquare, Clock, CheckCircle2, CheckCircle,
+  AlertCircle, ChevronDown, Pencil, Trash2, XCircle, X, Package, SearchX, Upload, Clock3, Image as ImageIcon, Archive, ClipboardList,
+  Sun, Moon, RefreshCw, BarChart3, ShieldCheck, Send, Eye, AlertTriangle, Mail, LogOut
+} from "lucide-react";
 import "./Dashboard.css";
 
 const API = apiUrl("/api/reports");
@@ -502,7 +508,7 @@ export default function Dashboard() {
       // for the claimer and also sends them an email.
 
       await fetchItems();
-      addNotification(`📬 Pickup location sent to claimer for: "${resolveTarget.title}"`);
+      addNotification(`Pickup location sent to claimer for: "${resolveTarget.title}"`);
       setResolveTarget(null);
       setResolvePickupLocation("");
       setResolveInstructions("");
@@ -645,9 +651,9 @@ export default function Dashboard() {
   const EditModal = ({ item, onClose }) => (
     <div className="modal" onClick={onClose}>
       <div className="modalBox" onClick={e => e.stopPropagation()}>
-        <h3>✏️ Edit Report</h3>
-        <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 4 }}>
-          ⏱ Edit closes in:{" "}
+        <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><Pencil size={24} /> Edit Report</h3>
+        <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 4, display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <Clock3 size={14} /> Edit closes in:{" "}
           <strong style={{ color: getEditTimeLeft(item) < 60000 ? "#ef4444" : "var(--accent-blue)" }}>
             {formatEditCountdown(getEditTimeLeft(item))}
           </strong>
@@ -689,7 +695,7 @@ export default function Dashboard() {
         {editForm.image ? (
           <div className="previewWrap">
             <img src={editForm.image} className="previewImg" alt="preview" />
-            <button className="removeImg" onClick={() => setEditForm(f => ({ ...f, image: "" }))}>✕ Remove</button>
+            <button className="removeImg" onClick={() => setEditForm(f => ({ ...f, image: "" }))}><X size={14} style={{verticalAlign:'middle'}} /> Remove</button>
           </div>
         ) : (
           <input type="file" accept="image/*"
@@ -746,7 +752,7 @@ export default function Dashboard() {
         {form.image ? (
           <div className="previewWrap">
             <img src={form.image} className="previewImg" alt="preview" />
-            <button className="removeImg" onClick={() => { setForm(f => ({ ...f, image: "" })); setImageFile(null); }}>✕ Remove</button>
+            <button className="removeImg" onClick={() => { setForm(f => ({ ...f, image: "" })); setImageFile(null); }}><X size={14} style={{verticalAlign:'middle'}} /> Remove</button>
           </div>
         ) : (
           <input type="file" accept="image/*"
@@ -776,8 +782,7 @@ export default function Dashboard() {
             >
               <img src={item.image} className="detailImg" alt={item.title} />
             </button>
-          )
-          : <div className="imgPlaceholder" style={{height:160}}>📦</div>}
+          : <div className="imgPlaceholder" style={{height:160, display: 'flex', alignItems: 'center', justifyContent: 'center'}}><Package size={48} color="var(--text-muted)" /></div>}
 
         <div className="detailHeader" style={{marginTop:10}}>
           <h3>{item.title}</h3>
@@ -801,29 +806,31 @@ export default function Dashboard() {
         )}
 
         <div className="detailMeta">
-          <span>📍 Found Location: {item.location}</span>
-          {item.pickupLocation && <span>🏢 Pickup Location: {item.pickupLocation}</span>}
-          {item.pickupInstructions && <span style={{display: 'block', marginTop: '10px'}}>💬 Collection Instructions: {item.pickupInstructions}</span>}
-          <span>📅 {item.dateOccurred ? new Date(item.dateOccurred).toLocaleDateString() : "—"}</span>
-          <span>🏷️ {item.category || "Other"}</span>
-          {item.owner?.name && <span>👤 Reported by {item.owner.name}</span>}
+          <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><MapPin size={16} /> Found Location: {item.location}</span>
+          {item.pickupLocation && <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Building size={16} /> Pickup Location: {item.pickupLocation}</span>}
+          {item.pickupInstructions && <span style={{display: 'flex', marginTop: '10px', alignItems: 'center', gap: '6px'}}><MessageSquare size={16} /> Collection Instructions: {item.pickupInstructions}</span>}
+          <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Calendar size={16} /> {item.dateOccurred ? new Date(item.dateOccurred).toLocaleDateString() : "—"}</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Tag size={16} /> {item.category || "Other"}</span>
+          {item.owner?.name && <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><User size={16} /> Reported by {item.owner.name}</span>}
         </div>
 
         {isAdmin && item.status === "pending" && (
           <div className="adminActions">
             <button 
               className="approveBtn" 
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
               onClick={() => doAdminAction(item._id, "approve")}
               disabled={busy === item._id}
             >
-              ✅ Approve Claim
+              <CheckCircle size={18} /> Approve Claim
             </button>
             <button 
               className="rejectBtn" 
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
               onClick={() => doAdminAction(item._id, "reject")}
               disabled={busy === item._id}
             >
-              ❌ Reject Claim
+              <XCircle size={18} /> Reject Claim
             </button>
           </div>
         )}
@@ -831,20 +838,22 @@ export default function Dashboard() {
         {isAdmin && item.status === "claimed" && (
           <button 
             className="resolveBtn" 
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
             onClick={() => handleResolve(item)}
             disabled={busy === item._id}
           >
-            🗂️ Mark as Resolved
+            <Archive size={18} /> Mark as Resolved
           </button>
         )}
 
         {isAdmin && (
           <button 
             className="deleteBtn" 
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
             onClick={() => handleAdminDelete(item._id)}
             disabled={busy === item._id}
           >
-            🗑️ Delete Report
+            <Trash2 size={18} /> Delete Report
           </button>
         )}
 
@@ -854,10 +863,14 @@ export default function Dashboard() {
           </button>
         )}
         {!isAdmin && item.status === "pending" && (
-          <div className="pendingNote">⏳ Claim pending admin approval</div>
+          <div className="pendingNote" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Clock3 size={18} /> Claim pending admin approval
+          </div>
         )}
         {!isAdmin && item.status === "claimed" && (
-          <div className="claimedNote">✅ This item has been claimed</div>
+          <div className="claimedNote" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <CheckCircle size={18} /> This item has been claimed
+          </div>
         )}
 
         {isEditable(item) && (
@@ -878,7 +891,7 @@ export default function Dashboard() {
               onClose();
             }}
           >
-            ✏️ Edit Report ({formatEditCountdown(getEditTimeLeft(item))})
+            <span style={{ display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'center' }}><Pencil size={18} /> Edit Report ({formatEditCountdown(getEditTimeLeft(item))})</span>
           </button>
         )}
         <button className="cancelBtn" onClick={onClose}>Close</button>
@@ -919,28 +932,31 @@ export default function Dashboard() {
     <div className="modal" onClick={() => setSettingsOpen(false)}>
       <div className="modalBox settingsBox" onClick={e => e.stopPropagation()}>
         <div className="settingsHeader">
-          <h3>⚙️ Settings</h3>
-          <button className="closeSettingsBtn" onClick={() => setSettingsOpen(false)}>✕</button>
+          <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><SlidersHorizontal size={24} /> Settings</h3>
+          <button className="closeSettingsBtn" onClick={() => setSettingsOpen(false)} aria-label="Close settings"><X size={20} /></button>
         </div>
 
         <div className="settingsTabs">
           <button
             className={`settingsTabBtn ${settingsTab === "profile" ? "active" : ""}`}
             onClick={() => setSettingsTab("profile")}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
           >
-            👤 Profile
+            <User size={16} /> Profile
           </button>
           <button
             className={`settingsTabBtn ${settingsTab === "settings" ? "active" : ""}`}
             onClick={() => setSettingsTab("settings")}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
           >
-            🔧 Settings
+            <SlidersHorizontal size={16} /> Settings
           </button>
           <button
             className={`settingsTabBtn ${settingsTab === "theme" ? "active" : ""}`}
             onClick={() => setSettingsTab("theme")}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
           >
-            🎨 Theme
+            <ImageIcon size={16} /> Theme
           </button>
         </div>
 
@@ -952,8 +968,8 @@ export default function Dashboard() {
                 <div className="profileDetails">
                   <h4>{displayName}</h4>
                   <p>{displayEmail}</p>
-                  <span className={`roleChip ${isAdmin ? "admin" : ""}`}>
-                    {isAdmin ? "👑 Admin" : "👤 User"}
+                  <span className={`roleChip ${isAdmin ? "admin" : ""}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                    {isAdmin ? <><CheckCircle2 size={14} /> Admin</> : <><User size={14} /> User</>}
                   </span>
                 </div>
               </div>
@@ -1028,7 +1044,7 @@ export default function Dashboard() {
                       <div className="previewLine short"></div>
                     </div>
                   </div>
-                  <span>☀️ Light</span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Sun size={16} /> Light</span>
                 </button>
                 <button
                   className={`themeCard ${theme === "dark" ? "active" : ""}`}
@@ -1041,7 +1057,7 @@ export default function Dashboard() {
                       <div className="previewLine short"></div>
                     </div>
                   </div>
-                  <span>🌙 Dark</span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Moon size={16} /> Dark</span>
                 </button>
               </div>
               <p className="themeNote">
@@ -1058,7 +1074,7 @@ export default function Dashboard() {
   const TimeoutWarningModal = () => (
     <div className="modal timeoutModal">
       <div className="modalBox timeoutBox" onClick={e => e.stopPropagation()}>
-        <div style={{ fontSize: 54, textAlign: "center", lineHeight: 1 }}>⏰</div>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}><Clock size={54} color="var(--accent-blue)" /></div>
         <h3 style={{ textAlign: "center", margin: 0 }}>Still there?</h3>
         <p style={{ color: "var(--text-muted)", textAlign: "center", fontSize: 14, margin: 0 }}>
           You've been inactive. You'll be logged out in
@@ -1077,9 +1093,9 @@ export default function Dashboard() {
         <button
           className="submitBtn"
           onClick={() => resetInactivityTimerRef.current?.()}
-          style={{ marginTop: 4 }}
+          style={{ marginTop: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
         >
-          ✅ Stay Logged In
+          <CheckCircle2 size={18} /> Stay Logged In
         </button>
         <button
           className="cancelBtn"
@@ -1097,7 +1113,7 @@ export default function Dashboard() {
       {/* ── SIDEBAR ── */}
       <div className="sidebar">
         <div className="sidebarBrand">
-          <span className="brandIcon">🔍</span>
+          <Search size={28} className="brandIcon" />
           <h2>Lost & Found</h2>
         </div>
 
@@ -1105,17 +1121,19 @@ export default function Dashboard() {
           {!isAdmin && (
             <>
               <button className="sidebarBtn" onClick={() => { setForm({...emptyForm, type:"lost"}); setShowLostForm(true); }}>
-                <span className="sidebarIcon">➕</span> Report Lost
+                <PlusCircle size={18} className="sidebarIcon" /> Report Lost
               </button>
               <button className="sidebarBtn" onClick={() => { setForm({...emptyForm, type:"found"}); setShowFoundForm(true); }}>
-                <span className="sidebarIcon">🔍</span> Report Found
+                <PackagePlus size={18} className="sidebarIcon" /> Report Found
               </button>
             </>
           )}
         </div>
 
         {isAdmin && (
-          <div className="adminBadgeSidebar">👑 Admin Mode</div>
+          <div className="adminBadgeSidebar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+            <CheckCircle2 size={16} /> Admin Mode
+          </div>
         )}
 
         <div className="sidebarFooter">
@@ -1123,7 +1141,7 @@ export default function Dashboard() {
             localStorage.clear(); 
             navigate("/login"); 
           }}>
-            <span className="sidebarIcon">🚪</span> Logout
+            <LogOut size={18} className="sidebarIcon" /> Logout
           </button>
         </div>
       </div>
@@ -1135,16 +1153,16 @@ export default function Dashboard() {
         <div className="topbar">
           <div className="userCard">
             <div className="userInfo">
-              <span className="userName">👤 {user?.username || "Nyandeng"}</span>
-              <span className={`roleTag ${isAdmin ? "adminTag" : ""}`}>
-                {isAdmin ? "👑 Admin" : "User"}
+              <span className="userName" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><User size={16} /> {user?.username || "Nyandeng"}</span>
+              <span className={`roleTag ${isAdmin ? "adminTag" : ""}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                {isAdmin ? <><ShieldCheck size={14} /> Admin</> : "User"}
               </span>
             </div>
           </div>
 
           <div className="topCenter">
             <div className="searchWrap">
-              <span className="searchIcon">🔎</span>
+              <Search size={18} className="searchIcon" />
               <input 
                 placeholder="Search items..." 
                 value={search} 
@@ -1162,7 +1180,7 @@ export default function Dashboard() {
               aria-label="Toggle theme"
               title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
             >
-              {theme === "dark" ? "☀️" : "🌙"}
+              {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
             </button>
 
             <div className="notif" ref={notifRef}>
@@ -1172,7 +1190,7 @@ export default function Dashboard() {
                 onClick={() => setNotifOpen(o => !o)}
                 aria-label="Notifications"
               >
-                🔔
+                <Bell size={22} />
               </button>
               {unreadCount > 0 && <span className="badge">{unreadCount}</span>}
 
@@ -1186,7 +1204,7 @@ export default function Dashboard() {
                           Mark all seen
                         </button>
                       )}
-                      <button type="button" className="closeNotif" onClick={() => setNotifOpen(false)}>×</button>
+                      <button type="button" className="closeNotif" onClick={() => setNotifOpen(false)} aria-label="Close notifications"><X size={16} /></button>
                     </div>
                   </div>
                   {safeNotifications.length === 0 ? (
@@ -1218,7 +1236,7 @@ export default function Dashboard() {
               >
                 <span className="avatar">{initials}</span>
                 <span className="profileButtonText">{displayName}</span>
-                <span className={`dropdownArrow ${profileOpen ? "open" : ""}`}>▼</span>
+                <span className={`dropdownArrow ${profileOpen ? "open" : ""}`}><ChevronDown size={14} /></span>
               </button>
 
               {profileOpen && (
@@ -1230,14 +1248,14 @@ export default function Dashboard() {
                       <span>{displayEmail}</span>
                     </div>
                   </div>
-                  <button type="button" onClick={() => { setSettingsTab("profile"); setSettingsOpen(true); setProfileOpen(false); }}>
-                    👤 Profile
+                  <button type="button" onClick={() => { setSettingsTab("profile"); setSettingsOpen(true); setProfileOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <User size={16} /> Profile
                   </button>
-                  <button type="button" onClick={() => { setSettingsTab("settings"); setSettingsOpen(true); setProfileOpen(false); }}>
-                    ⚙️ Settings
+                  <button type="button" onClick={() => { setSettingsTab("settings"); setSettingsOpen(true); setProfileOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <SlidersHorizontal size={16} /> Settings
                   </button>
-                  <button type="button" onClick={() => { setSettingsTab("theme"); setSettingsOpen(true); setProfileOpen(false); }}>
-                    🎨 Theme
+                  <button type="button" onClick={() => { setSettingsTab("theme"); setSettingsOpen(true); setProfileOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <ImageIcon size={16} /> Theme
                   </button>
                   <button
                     type="button"
@@ -1246,8 +1264,9 @@ export default function Dashboard() {
                       localStorage.clear();
                       navigate("/login");
                     }}
+                    style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
                   >
-                    🚪 Logout
+                    <LogOut size={16} /> Logout
                   </button>
                 </div>
               )}
@@ -1258,35 +1277,35 @@ export default function Dashboard() {
         {/* ── STATS ── */}
         <div className="stats">
           <div className="card statTotal" onClick={() => setActiveTab("all")}>
-            <div className="statIcon">📊</div>
+            <div className="statIcon"><BarChart3 size={24} /></div>
             <div className="statInfo">
               <span className="statValue">{counts.all}</span>
               <span className="statLabel">Total</span>
             </div>
           </div>
           <div className="card statLost" onClick={() => setActiveTab("lost")}>
-            <div className="statIcon">🔴</div>
+            <div className="statIcon"><AlertCircle size={24} /></div>
             <div className="statInfo">
               <span className="statValue">{counts.lost}</span>
               <span className="statLabel">Lost</span>
             </div>
           </div>
           <div className="card statFound" onClick={() => setActiveTab("found")}>
-            <div className="statIcon">🟢</div>
+            <div className="statIcon"><CheckCircle2 size={24} /></div>
             <div className="statInfo">
               <span className="statValue">{counts.found}</span>
               <span className="statLabel">Found</span>
             </div>
           </div>
           <div className="card statPending" onClick={() => setActiveTab("pending")}>
-            <div className="statIcon">⏳</div>
+            <div className="statIcon"><Clock3 size={24} /></div>
             <div className="statInfo">
               <span className="statValue">{counts.pending}</span>
               <span className="statLabel">Pending</span>
             </div>
           </div>
           <div className="card statClaimed" onClick={() => setActiveTab("claimed")}>
-            <div className="statIcon">✅</div>
+            <div className="statIcon"><CheckCircle size={24} /></div>
             <div className="statInfo">
               <span className="statValue">{counts.claimed}</span>
               <span className="statLabel">Claimed</span>
@@ -1294,7 +1313,7 @@ export default function Dashboard() {
           </div>
           {isAdmin && (
             <div className="card statResolved" onClick={() => setActiveTab("resolved")}>
-              <div className="statIcon">🗂️</div>
+              <div className="statIcon"><Archive size={24} /></div>
               <div className="statInfo">
                 <span className="statValue">{counts.resolved}</span>
                 <span className="statLabel">Resolved</span>
@@ -1310,7 +1329,7 @@ export default function Dashboard() {
             onClick={() => setIsDropdownOpen(o => !o)}
           >
             {currentSortLabel} 
-            <span className={`dropdownArrow ${isDropdownOpen ? "open" : ""}`}>▼</span>
+            <ChevronDown size={14} className={`dropdownArrow ${isDropdownOpen ? "open" : ""}`} />
           </button>
           {isDropdownOpen && (
             <div className="dropdownMenu">
@@ -1339,13 +1358,16 @@ export default function Dashboard() {
             </div>
           ) : fetchError ? (
             <div className="errorState">
-              <span className="errorIcon">⚠️</span>
+              <AlertTriangle size={28} className="errorIcon" />
               <h3>Failed to load reports</h3>
               <p>{fetchError}</p>
-              <button className="retryBtn" onClick={fetchItems}>🔄 Retry</button>
+              <button className="retryBtn" onClick={fetchItems} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}><RefreshCw size={16} /> Retry</button>
             </div>
           ) : filtered.length === 0 ? (
-            <div className="emptyState">📭 No items found in this category.</div>
+            <div className="emptyState" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+              <SearchX size={32} color="var(--text-muted)" />
+              <span>No items found in this category.</span>
+            </div>
           ) : (
             <div className="grid">
               {filtered.map(item => {
@@ -1367,7 +1389,7 @@ export default function Dashboard() {
                           <img src={item.image} className="itemImg" alt={item.title} />
                         </button>
                       )
-                      : <div className="imgPlaceholder">📦</div>}
+                      : <div className="imgPlaceholder" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Package size={32} color="var(--text-muted)" /></div>}
 
                     <div className="itemCardTop">
                       <h3>{item.title}</h3>
@@ -1375,17 +1397,17 @@ export default function Dashboard() {
                     </div>
 
                     <p className="itemDesc">{descriptionPreview}</p>
-                    <div className="location">📍 Found at: {item.location}</div>
-                    {item.pickupLocation && <div className="location">🏢 Pickup: {item.pickupLocation}</div>}
+                    <div className="location" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><MapPin size={14} /> Found at: {item.location}</div>
+                    {item.pickupLocation && <div className="location" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Building size={14} /> Pickup: {item.pickupLocation}</div>}
 
                     {isAdmin && item.claimer?.name && (
-                      <div className="claimerInfo">
-                        👤 Claimer: {item.claimer.name} {item.claimer.phone && `📞 ${item.claimer.phone}`}
+                      <div className="claimerInfo" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px' }}>
+                        <User size={14} /> Claimer: {item.claimer.name} {item.claimer.phone && <><Phone size={14} style={{ marginLeft: '4px' }} /> {item.claimer.phone}</>}
                       </div>
                     )}
 
                     {isAdmin && item.owner?.name && (
-                      <div className="reporterInfo">📋 Reported by: {item.owner.name}</div>
+                      <div className="reporterInfo" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><ClipboardList size={14} /> Reported by: {item.owner.name}</div>
                     )}
 
                     {isAdmin && item.adminDescription && (
@@ -1396,9 +1418,9 @@ export default function Dashboard() {
                       <div className="privateCardInfo claimCardInfo">Claim note: {truncateText(item.claimer.description, 70)}</div>
                     )}
 
-                    {item.status === "pending" && <span className="badge-pending">⏳ Pending Approval</span>}
-                    {item.status === "claimed" && <span className="badge-claimed">✅ Claimed</span>}
-                    {item.status === "resolved" && <span className="badge-resolved">🗂️ Resolved</span>}
+                    {item.status === "pending" && <span className="badge-pending" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Clock3 size={12} /> Pending Approval</span>}
+                    {item.status === "claimed" && <span className="badge-claimed" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><CheckCircle size={12} /> Claimed</span>}
+                    {item.status === "resolved" && <span className="badge-resolved" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Archive size={12} /> Resolved</span>}
 
                     {isAdmin && item.status === "pending" && (
                       <div className="adminActions">
@@ -1407,14 +1429,14 @@ export default function Dashboard() {
                           onClick={(e) => { e.stopPropagation(); doAdminAction(item._id, "approve"); }}
                           disabled={busy === item._id}
                         >
-                          ✅ Approve
+                          <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}><CheckCircle size={14} /> Approve</span>
                         </button>
                         <button 
                           className="rejectBtn" 
                           onClick={(e) => { e.stopPropagation(); doAdminAction(item._id, "reject"); }}
                           disabled={busy === item._id}
                         >
-                          ❌ Reject
+                          <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}><XCircle size={14} /> Reject</span>
                         </button>
                       </div>
                     )}
@@ -1425,7 +1447,7 @@ export default function Dashboard() {
                         onClick={(e) => { e.stopPropagation(); handleResolve(item); }}
                         disabled={busy === item._id}
                       >
-                        🗂️ Resolve
+                        <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}><Archive size={14} /> Resolve</span>
                       </button>
                     )}
 
@@ -1435,7 +1457,7 @@ export default function Dashboard() {
                         onClick={(e) => { e.stopPropagation(); handleAdminDelete(item._id); }}
                         disabled={busy === item._id}
                       >
-                        🗑️ Delete
+                        <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}><Trash2 size={14} /> Delete</span>
                       </button>
                     )}
 
@@ -1462,7 +1484,7 @@ export default function Dashboard() {
                           });
                         }}
                       >
-                        ✏️ Edit ({formatEditCountdown(getEditTimeLeft(item))})
+                        <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}><Pencil size={14} /> Edit ({formatEditCountdown(getEditTimeLeft(item))})</span>
                       </button>
                     )}
                   </div>
@@ -1495,34 +1517,34 @@ export default function Dashboard() {
         <div className="modal resolvePopupOverlay" onClick={() => { setResolveTarget(null); }}>
           <div className="resolvePopupBox" onClick={e => e.stopPropagation()}>
             <div className="resolvePopupHeader">
-              <span className="resolvePopupIcon">📬</span>
+              <Send size={28} className="resolvePopupIcon" />
               <div>
                 <h3 className="resolvePopupTitle">Send Pickup Location</h3>
-                <p className="resolvePopupSub">This message will be sent to the claimer&apos;s notification bar</p>
+                <p className="resolvePopupSub">This message will be sent to the claimer's notification bar</p>
               </div>
             </div>
 
             <div className="resolveItemInfo">
               <div className="resolveItemRow">
-                <span className="resolveInfoLabel">📦 Item</span>
+                <span className="resolveInfoLabel" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Package size={14} /> Item</span>
                 <span className="resolveInfoValue">{resolveTarget.title}</span>
               </div>
               {resolveTarget.claimer?.name && (
                 <div className="resolveItemRow">
-                  <span className="resolveInfoLabel">👤 Claimer</span>
+                  <span className="resolveInfoLabel" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><User size={14} /> Claimer</span>
                   <span className="resolveInfoValue">{resolveTarget.claimer.name}</span>
                 </div>
               )}
               {resolveTarget.claimer?.phone && (
                 <div className="resolveItemRow">
-                  <span className="resolveInfoLabel">📞 Phone</span>
+                  <span className="resolveInfoLabel" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Phone size={14} /> Phone</span>
                   <span className="resolveInfoValue">{resolveTarget.claimer.phone}</span>
                 </div>
               )}
             </div>
 
             <div className="resolveFormGroup">
-              <label className="resolveLabel">📍 Pickup Location *</label>
+              <label className="resolveLabel" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><MapPin size={14} /> Pickup Location *</label>
               <input
                 className="resolveInput"
                 placeholder="e.g. Administration Office, Room 12, Ground Floor"
@@ -1532,7 +1554,7 @@ export default function Dashboard() {
             </div>
 
             <div className="resolveFormGroup">
-              <label className="resolveLabel">💬 Collection Instructions (Optional)</label>
+              <label className="resolveLabel" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><MessageSquare size={14} /> Collection Instructions (Optional)</label>
               <textarea
                 className="resolveTextarea"
                 placeholder="e.g. Please bring your ID. Available Mon–Fri 9am–5pm."
@@ -1545,7 +1567,7 @@ export default function Dashboard() {
             <div className="resolvePreview">
               <span className="resolvePreviewLabel">Preview notification:</span>
               <p className="resolvePreviewText">
-                ✅ Your claim for &quot;{resolveTarget.title}&quot; has been resolved! — 📍 Pickup location: {resolvePickupLocation || "(enter location above)"}{resolveInstructions ? ` — 💬 ${resolveInstructions}` : ""}
+                Your claim for "{resolveTarget.title}" has been resolved! — Pickup location: {resolvePickupLocation || "(enter location above)"}{resolveInstructions ? ` — ${resolveInstructions}` : ""}
               </p>
             </div>
 
@@ -1555,7 +1577,7 @@ export default function Dashboard() {
                 onClick={submitResolve}
                 disabled={resolveSubmitting || !resolvePickupLocation.trim()}
               >
-                {resolveSubmitting ? "Sending…" : "✅ Send & Mark as Resolved"}
+                {resolveSubmitting ? "Sending…" : <><CheckCircle size={16} style={{verticalAlign:'middle', marginRight:'4px'}} /> Send & Mark as Resolved</>}
               </button>
               <button
                 className="cancelBtn"
