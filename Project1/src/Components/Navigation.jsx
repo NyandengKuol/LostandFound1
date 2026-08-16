@@ -53,7 +53,7 @@ export default function Navigation() {
         aria-label="Toggle navigation menu"
         aria-expanded={menuOpen}
         onClick={() => setMenuOpen((prev) => !prev)}
-        style={{ background: 'none', border: 'none', color: 'white', display: 'flex', alignItems: 'center' }}
+        style={{ background: 'none', border: 'none', color: 'white' }}
       >
         {menuOpen ? <X size={28} /> : <Menu size={28} />}
       </button>
