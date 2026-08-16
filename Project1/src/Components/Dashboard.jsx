@@ -112,6 +112,12 @@ export default function Dashboard() {
   const [editForm, setEditForm] = useState(emptyForm);
   const [editSubmitting, setEditSubmitting] = useState(false);
 
+  // Resolve popup state
+  const [resolveTarget, setResolveTarget] = useState(null);
+  const [resolvePickupLocation, setResolvePickupLocation] = useState("");
+  const [resolveMessage, setResolveMessage] = useState("");
+  const [resolveSubmitting, setResolveSubmitting] = useState(false);
+
   // Live clock tick for edit countdown display
   const [now, setNow] = useState(() => Date.now());
 
@@ -142,6 +148,39 @@ export default function Dashboard() {
     fetchItems();
     const saved = localStorage.getItem("seenNotifications");
     if (saved) setSeenNotifications(readStoredList("seenNotifications"));
+  }, []);
+
+  /* ── CONSUME PENDING CLAIMER RESOLVE NOTIFICATIONS ── */
+  useEffect(() => {
+    if (!user?.username && !user?.email) return;
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key || !key.startsWith("resolve_notify_")) continue;
+      try {
+        const data = JSON.parse(localStorage.getItem(key) || "");
+        if (!data) continue;
+        const claimerName = (data.claimer?.name || "").toLowerCase();
+        const myName = (user.username || "").toLowerCase();
+        const myEmail = (user.email || "").toLowerCase();
+        const isMatch =
+          (claimerName && myName && claimerName === myName) ||
+          (data.claimer?.email && myEmail && data.claimer.email === myEmail);
+        if (isMatch) {
+          const parts = [
+            `✅ Your claim for "${data.itemTitle}" has been resolved!`,
+            `📍 Pickup location: ${data.pickupLocation}`,
+          ];
+          if (data.message) parts.push(`💬 ${data.message}`);
+          addNotification(parts.join(" — "));
+          keysToRemove.push(key);
+        }
+      } catch {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach(k => localStorage.removeItem(k));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -370,6 +409,72 @@ export default function Dashboard() {
   const handleAdminDelete = (id) => {
     if (window.confirm("Permanently delete this report?")) {
       doAdminAction(id, "delete", "DELETE");
+    }
+  };
+
+  /* ── RESOLVE WITH PICKUP POPUP ── */
+  const handleResolve = (item) => {
+    setResolveTarget(item);
+    setResolvePickupLocation(item.location || "");
+    setResolveMessage("");
+  };
+
+  const submitResolve = async () => {
+    if (!resolvePickupLocation.trim()) {
+      alert("Please enter a pickup location.");
+      return;
+    }
+    if (!token) {
+      alert("Admin token missing. Please login again.");
+      navigate("/login");
+      return;
+    }
+    setResolveSubmitting(true);
+    try {
+      const res = await fetch(`${API}/${resolveTarget._id}/resolve`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          pickupLocation: resolvePickupLocation.trim(),
+          message: resolveMessage.trim(),
+        }),
+      });
+      if (res.status === 401 || res.status === 403) {
+        alert("Session expired — please log in again.");
+        localStorage.removeItem("adminToken");
+        localStorage.removeItem("user");
+        navigate("/login");
+        return;
+      }
+      if (!res.ok) { const e = await res.json(); throw new Error(e.message); }
+
+      // Write a pickup notification for the claimer to consume
+      localStorage.setItem(
+        `resolve_notify_${resolveTarget._id}`,
+        JSON.stringify({
+          itemId: resolveTarget._id,
+          itemTitle: resolveTarget.title,
+          pickupLocation: resolvePickupLocation.trim(),
+          message: resolveMessage.trim(),
+          claimer: resolveTarget.claimer,
+          timestamp: new Date().toISOString(),
+        })
+      );
+
+      await fetchItems();
+      addNotification(`📬 Pickup location sent to claimer for: "${resolveTarget.title}"`);
+      setResolveTarget(null);
+      setResolvePickupLocation("");
+      setResolveMessage("");
+      // Close detail modal if open
+      setSelected(null);
+    } catch (e) {
+      alert("Error: " + e.message);
+    } finally {
+      setResolveSubmitting(false);
     }
   };
 
@@ -687,7 +792,7 @@ export default function Dashboard() {
         {isAdmin && item.status === "claimed" && (
           <button 
             className="resolveBtn" 
-            onClick={() => doAdminAction(item._id, "resolve")}
+            onClick={() => handleResolve(item)}
             disabled={busy === item._id}
           >
             🗂️ Mark as Resolved
@@ -1277,7 +1382,7 @@ export default function Dashboard() {
                     {isAdmin && item.status === "claimed" && (
                       <button 
                         className="resolveBtn" 
-                        onClick={(e) => { e.stopPropagation(); doAdminAction(item._id, "resolve"); }}
+                        onClick={(e) => { e.stopPropagation(); handleResolve(item); }}
                         disabled={busy === item._id}
                       >
                         🗂️ Resolve
@@ -1344,6 +1449,84 @@ export default function Dashboard() {
       )}
       {claimTarget && ClaimModal()}
       {settingsOpen && SettingsModal()}
+
+      {/* ── RESOLVE PICKUP POPUP ── */}
+      {resolveTarget && (
+        <div className="modal resolvePopupOverlay" onClick={() => { setResolveTarget(null); }}>
+          <div className="resolvePopupBox" onClick={e => e.stopPropagation()}>
+            <div className="resolvePopupHeader">
+              <span className="resolvePopupIcon">📬</span>
+              <div>
+                <h3 className="resolvePopupTitle">Send Pickup Location</h3>
+                <p className="resolvePopupSub">This message will be sent to the claimer&apos;s notification bar</p>
+              </div>
+            </div>
+
+            <div className="resolveItemInfo">
+              <div className="resolveItemRow">
+                <span className="resolveInfoLabel">📦 Item</span>
+                <span className="resolveInfoValue">{resolveTarget.title}</span>
+              </div>
+              {resolveTarget.claimer?.name && (
+                <div className="resolveItemRow">
+                  <span className="resolveInfoLabel">👤 Claimer</span>
+                  <span className="resolveInfoValue">{resolveTarget.claimer.name}</span>
+                </div>
+              )}
+              {resolveTarget.claimer?.phone && (
+                <div className="resolveItemRow">
+                  <span className="resolveInfoLabel">📞 Phone</span>
+                  <span className="resolveInfoValue">{resolveTarget.claimer.phone}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="resolveFormGroup">
+              <label className="resolveLabel">📍 Pickup Location *</label>
+              <input
+                className="resolveInput"
+                placeholder="e.g. Administration Office, Room 12, Ground Floor"
+                value={resolvePickupLocation}
+                onChange={e => setResolvePickupLocation(e.target.value)}
+              />
+            </div>
+
+            <div className="resolveFormGroup">
+              <label className="resolveLabel">💬 Additional Message (Optional)</label>
+              <textarea
+                className="resolveTextarea"
+                placeholder="e.g. Please bring your ID. Available Mon–Fri 9am–5pm."
+                value={resolveMessage}
+                onChange={e => setResolveMessage(e.target.value)}
+                rows={3}
+              />
+            </div>
+
+            <div className="resolvePreview">
+              <span className="resolvePreviewLabel">Preview notification:</span>
+              <p className="resolvePreviewText">
+                ✅ Your claim for &quot;{resolveTarget.title}&quot; has been resolved! — 📍 Pickup location: {resolvePickupLocation || "(enter location above)"}{resolveMessage ? ` — 💬 ${resolveMessage}` : ""}
+              </p>
+            </div>
+
+            <div className="resolveActions">
+              <button
+                className="resolveSendBtn"
+                onClick={submitResolve}
+                disabled={resolveSubmitting || !resolvePickupLocation.trim()}
+              >
+                {resolveSubmitting ? "Sending…" : "✅ Send & Mark as Resolved"}
+              </button>
+              <button
+                className="cancelBtn"
+                onClick={() => setResolveTarget(null)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

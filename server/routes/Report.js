@@ -190,16 +190,42 @@ router.patch("/:id/reject", adminAuth, async (req, res) => {
 // ── ADMIN: RESOLVE ──
 router.patch("/:id/resolve", adminAuth, async (req, res) => {
   try {
+    const { pickupLocation, message } = req.body || {};
+
     const updated = await Report.findByIdAndUpdate(
       req.params.id,
-      {
-        status: "resolved",
-      },
+      { status: "resolved" },
       { new: true }
     );
 
     if (!updated) {
       return res.status(404).json({ message: "Report not found" });
+    }
+
+    // Send pickup notification email (support copy + claimer reference)
+    if (pickupLocation) {
+      const claimer = updated.claimer || {};
+      const emailLines = [
+        `Item "${updated.title}" has been marked as RESOLVED.`,
+        "",
+        `Claimer: ${claimer.name || "Unknown"}`,
+        claimer.phone ? `Phone: ${claimer.phone}` : "",
+        "",
+        `📍 Pickup Location: ${pickupLocation}`,
+        message ? `💬 Admin Message: ${message}` : "",
+        "",
+        `Category: ${updated.category || "Other"}`,
+        `Original Location: ${updated.location}`,
+        `Resolved at: ${new Date().toLocaleString()}`,
+      ].filter(Boolean).join("\n");
+
+      sendEmail({
+        to: SUPPORT_EMAIL,
+        subject: `[Resolved] Item pickup ready: "${updated.title}"`,
+        text: emailLines,
+      }).catch((emailError) => {
+        console.error("Resolve notification email error:", emailError);
+      });
     }
 
     res.json(updated);

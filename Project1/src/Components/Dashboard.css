@@ -2055,3 +2055,238 @@
     -webkit-overflow-scrolling: touch;
   }
 }
+
+/* ══════════════════════════════════════════════
+   RESOLVE PICKUP POPUP
+   ══════════════════════════════════════════════ */
+
+@keyframes resolvePopupIn {
+  from {
+    opacity: 0;
+    transform: translateY(28px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.resolvePopupOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.62);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1200;
+  padding: 20px;
+}
+
+.resolvePopupBox {
+  background: var(--bg-modal);
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 500px;
+  box-shadow: 0 24px 64px rgba(15, 23, 42, 0.22), 0 0 0 1px rgba(255,255,255,0.08);
+  overflow: hidden;
+  animation: resolvePopupIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+/* Header band */
+.resolvePopupHeader {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 22px 24px 20px;
+  background: linear-gradient(135deg, #16a34a 0%, #14b8a6 100%);
+  color: #fff;
+}
+
+.resolvePopupIcon {
+  font-size: 38px;
+  line-height: 1;
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.25));
+}
+
+.resolvePopupTitle {
+  margin: 0 0 3px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.resolvePopupSub {
+  margin: 0;
+  font-size: 12.5px;
+  color: rgba(255,255,255,0.82);
+}
+
+/* Item info panel */
+.resolveItemInfo {
+  margin: 20px 24px 0;
+  background: var(--bg-input);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.resolveItemRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 16px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.resolveItemRow:last-child {
+  border-bottom: none;
+}
+
+.resolveInfoLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  min-width: 80px;
+  flex-shrink: 0;
+}
+
+.resolveInfoValue {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+/* Form fields */
+.resolveFormGroup {
+  padding: 16px 24px 0;
+}
+
+.resolveLabel {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 7px;
+}
+
+.resolveInput,
+.resolveTextarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 14px;
+  background: var(--bg-input);
+  border: 1.5px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 14px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  outline: none;
+  resize: vertical;
+}
+
+.resolveInput:focus,
+.resolveTextarea:focus {
+  border-color: #16a34a;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.15);
+}
+
+.resolveTextarea {
+  min-height: 76px;
+  line-height: 1.5;
+}
+
+/* Live preview */
+.resolvePreview {
+  margin: 18px 24px 0;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, rgba(22,163,74,0.07) 0%, rgba(20,184,166,0.07) 100%);
+  border: 1px solid rgba(22, 163, 74, 0.22);
+  border-radius: var(--radius-md);
+}
+
+.resolvePreviewLabel {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #16a34a;
+  margin-bottom: 6px;
+}
+
+.resolvePreviewText {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.55;
+  word-break: break-word;
+}
+
+/* Actions row */
+.resolveActions {
+  display: flex;
+  gap: 10px;
+  padding: 20px 24px 24px;
+  flex-wrap: wrap;
+}
+
+.resolveSendBtn {
+  flex: 1;
+  min-width: 160px;
+  padding: 11px 20px;
+  background: linear-gradient(135deg, #16a34a 0%, #14b8a6 100%);
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
+  box-shadow: 0 4px 14px rgba(22, 163, 74, 0.35);
+}
+
+.resolveSendBtn:hover:not(:disabled) {
+  opacity: 0.93;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(22, 163, 74, 0.45);
+}
+
+.resolveSendBtn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.resolveSendBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Dark-mode adjustments */
+[data-theme="dark"] .resolvePopupBox {
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255,255,255,0.06);
+}
+
+[data-theme="dark"] .resolveInput,
+[data-theme="dark"] .resolveTextarea {
+  background: rgba(30, 41, 59, 0.8);
+  border-color: rgba(71, 85, 105, 0.6);
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .resolveItemInfo {
+  background: rgba(30, 41, 59, 0.6);
+  border-color: rgba(71, 85, 105, 0.5);
+}
+
+[data-theme="dark"] .resolveItemRow {
+  border-color: rgba(71, 85, 105, 0.4);
+}
+
+[data-theme="dark"] .resolvePreview {
+  background: linear-gradient(135deg, rgba(22,163,74,0.12) 0%, rgba(20,184,166,0.12) 100%);
+  border-color: rgba(22, 163, 74, 0.3);
+}
