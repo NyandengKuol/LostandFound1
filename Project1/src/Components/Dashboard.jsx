@@ -146,9 +146,16 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
+    // Auth Check: Redirect to signup if not logged in
+    if (!user?.username && !user?.email && !token) {
+      navigate("/signup");
+      return;
+    }
+
     fetchItems();
     const saved = localStorage.getItem("seenNotifications");
     if (saved) setSeenNotifications(readStoredList("seenNotifications"));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /* ── FETCH SERVER NOTIFICATIONS ── */
