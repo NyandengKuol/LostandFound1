@@ -782,7 +782,7 @@ export default function Dashboard() {
             >
               <img src={item.image} className="detailImg" alt={item.title} />
             </button>
-          : <div className="imgPlaceholder" style={{height:160, display: 'flex', alignItems: 'center', justifyContent: 'center'}}><Package size={48} color="var(--text-muted)" /></div>}
+          ) : <div className="imgPlaceholder" style={{height:160, display: 'flex', alignItems: 'center', justifyContent: 'center'}}><Package size={48} color="var(--text-muted)" /></div>}
 
         <div className="detailHeader" style={{marginTop:10}}>
           <h3>{item.title}</h3>
