@@ -6,7 +6,7 @@ import {
   Search, SlidersHorizontal, PlusCircle, PackagePlus, Bell, MapPin, Building,
   Calendar, Tag, User, Phone, MessageSquare, Clock, CheckCircle2, CheckCircle,
   AlertCircle, ChevronDown, Pencil, Trash2, XCircle, X, Package, SearchX, Upload, Clock3, Image as ImageIcon, Archive, ClipboardList,
-  Sun, Moon, RefreshCw, BarChart3, ShieldCheck, Send, Eye, AlertTriangle, Mail, LogOut
+  Sun, Moon, RefreshCw, BarChart3, ShieldCheck, Send, Eye, AlertTriangle, Mail, LogOut, Lock
 } from "lucide-react";
 import "./Dashboard.css";
 
@@ -63,6 +63,7 @@ export default function Dashboard() {
   const { theme, toggleTheme } = useTheme();
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const token = localStorage.getItem("adminToken");
+  const userToken = localStorage.getItem("token");
 
   const isAdmin = user?.role === "admin" || token !== null;
   const displayName = user?.username || (isAdmin ? "Admin" : "User");
@@ -323,7 +324,7 @@ export default function Dashboard() {
       const payload = { 
         ...form, 
         type, 
-        owner: { name: user.username || "Anonymous", email: user.email || "" } 
+        owner: { id: user.id || "", name: user.username || "Anonymous", email: user.email || "" } 
       };
       const res = await fetch(API, {
         method: "POST",
@@ -529,12 +530,43 @@ export default function Dashboard() {
     return EDIT_WINDOW_MS - (now - created);
   };
 
-  const isEditable = (item) => {
+  const isOwnReport = (item) => {
     if (isAdmin) return false;
-    const isOwner = item.owner?.email
+    if (item.owner?.id && user.id) {
+      return item.owner.id === user.id;
+    }
+    return item.owner?.email
       ? item.owner.email === user.email
       : item.owner?.name === user.username;
-    return isOwner && getEditTimeLeft(item) > 0;
+  };
+
+  const isReporterOfFoundItem = (item) => {
+    if (!user) return false;
+    const isOwner = (item.owner?.id && user.id && item.owner.id === user.id) ||
+                    (item.owner?.email && user.email && item.owner.email === user.email) ||
+                    (item.owner?.name && user.username && item.owner.name === user.username);
+    return item.type === "found" && isOwner;
+  };
+
+  const getEditCountdownMessage = (item) => {
+    const timeLeft = getEditTimeLeft(item);
+    if (timeLeft <= 0) {
+      return { text: "Editing period expired.", state: "expired" };
+    }
+    const secs = Math.max(0, Math.floor(timeLeft / 1000));
+    const minutes = Math.floor(secs / 60);
+    const seconds = secs % 60;
+    if (timeLeft < 60000) {
+      return { text: "Less than 1 minute remaining.", state: "low" };
+    } else if (timeLeft < 120000) {
+      return { text: `You can edit this report for ${minutes} minute ${seconds} seconds.`, state: "normal" };
+    } else {
+      return { text: `You can edit this report for ${minutes} minutes ${seconds} seconds.`, state: "normal" };
+    }
+  };
+
+  const isEditable = (item) => {
+    return isOwnReport(item) && getEditTimeLeft(item) > 0;
   };
 
   const formatEditCountdown = (ms) => {
@@ -572,7 +604,10 @@ export default function Dashboard() {
     try {
       const res = await fetch(`${API}/${editTarget._id}/edit`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${userToken}`
+        },
         body: JSON.stringify(editForm)
       });
       if (!res.ok) { const e = await res.json(); throw new Error(e.message); }
@@ -592,7 +627,10 @@ export default function Dashboard() {
     try {
       const res = await fetch(`${API}/${claimTarget._id}/claim`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${userToken}`
+        },
         body: JSON.stringify({ claimer: { ...claimerInfo, email: user.email || "" } })
       });
       if (!res.ok) { const e = await res.json(); throw new Error(e.message); }
@@ -647,68 +685,81 @@ export default function Dashboard() {
 
   const currentSortLabel = dropdownItems.find(item => item.key === sortOrder)?.label || "All";
 
-  /* ── EDIT MODAL ── */
-  const EditModal = ({ item, onClose }) => (
-    <div className="modal" onClick={onClose}>
-      <div className="modalBox" onClick={e => e.stopPropagation()}>
-        <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><Pencil size={24} /> Edit Report</h3>
-        <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 4, display: 'flex', alignItems: 'center', gap: '4px' }}>
-          <Clock3 size={14} /> Edit closes in:{" "}
-          <strong style={{ color: getEditTimeLeft(item) < 60000 ? "#ef4444" : "var(--accent-blue)" }}>
-            {formatEditCountdown(getEditTimeLeft(item))}
-          </strong>
-        </p>
+  const EditModal = ({ item, onClose }) => {
+    const countdownInfo = getEditCountdownMessage(item);
+    const isExpired = countdownInfo.state === "expired";
 
-        <span className="fieldLabel">Title *</span>
-        <input placeholder="e.g. Black laptop bag"
-          value={editForm.title}
-          onChange={e => setEditForm(f => ({ ...f, title: e.target.value }))} />
+    return (
+      <div className="modal" onClick={onClose}>
+        <div className="modalBox" onClick={e => e.stopPropagation()}>
+          <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><Pencil size={24} /> Edit Report</h3>
+          <p style={{
+            fontSize: 13,
+            color: isExpired || countdownInfo.state === "low" ? "#ef4444" : "var(--text-muted)",
+            marginBottom: 12,
+            fontWeight: countdownInfo.state === "low" ? "bold" : "normal"
+          }}>
+            {countdownInfo.text}
+          </p>
 
-        <span className="fieldLabel">Description *</span>
-        <textarea placeholder="Describe the item in detail..."
-          value={editForm.description}
-          onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))} />
+          <span className="fieldLabel">Title *</span>
+          <input placeholder="e.g. Black laptop bag"
+            value={editForm.title}
+            disabled={isExpired}
+            onChange={e => setEditForm(f => ({ ...f, title: e.target.value }))} />
 
-        <span className="fieldLabel">Private Admin Details</span>
-        <textarea placeholder="Extra details only admins can see..."
-          value={editForm.adminDescription}
-          onChange={e => setEditForm(f => ({ ...f, adminDescription: e.target.value }))} />
+          <span className="fieldLabel">Description *</span>
+          <textarea placeholder="Describe the item in detail..."
+            value={editForm.description}
+            disabled={isExpired}
+            onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))} />
 
-        <span className="fieldLabel">Location *</span>
-        <input placeholder="Where was it lost/found?"
-          value={editForm.location}
-          onChange={e => setEditForm(f => ({ ...f, location: e.target.value }))} />
+          <span className="fieldLabel">Private Admin Details</span>
+          <textarea placeholder="Extra details only admins can see..."
+            value={editForm.adminDescription}
+            disabled={isExpired}
+            onChange={e => setEditForm(f => ({ ...f, adminDescription: e.target.value }))} />
 
-        <span className="fieldLabel">Date *</span>
-        <input type="date"
-          value={editForm.dateOccurred}
-          onChange={e => setEditForm(f => ({ ...f, dateOccurred: e.target.value }))} />
+          <span className="fieldLabel">Location *</span>
+          <input placeholder="Where was it lost/found?"
+            value={editForm.location}
+            disabled={isExpired}
+            onChange={e => setEditForm(f => ({ ...f, location: e.target.value }))} />
 
-        <span className="fieldLabel">Category</span>
-        <select value={editForm.category}
-          onChange={e => setEditForm(f => ({ ...f, category: e.target.value }))}>
-          {["Electronics","Bags","Clothing","Documents","Keys","Wallet","Jewellery","Other"].map(c =>
-            <option key={c}>{c}</option>)}
-        </select>
+          <span className="fieldLabel">Date *</span>
+          <input type="date"
+            value={editForm.dateOccurred}
+            disabled={isExpired}
+            onChange={e => setEditForm(f => ({ ...f, dateOccurred: e.target.value }))} />
 
-        <span className="fieldLabel">Photo (Optional)</span>
-        {editForm.image ? (
-          <div className="previewWrap">
-            <img src={editForm.image} className="previewImg" alt="preview" />
-            <button className="removeImg" onClick={() => setEditForm(f => ({ ...f, image: "" }))}><X size={14} style={{verticalAlign:'middle'}} /> Remove</button>
-          </div>
-        ) : (
-          <input type="file" accept="image/*"
-            onChange={e => handleEditImageChange(e.target.files[0])} />
-        )}
+          <span className="fieldLabel">Category</span>
+          <select value={editForm.category}
+            disabled={isExpired}
+            onChange={e => setEditForm(f => ({ ...f, category: e.target.value }))}>
+            {["Electronics","Bags","Clothing","Documents","Keys","Wallet","Jewellery","Other"].map(c =>
+              <option key={c}>{c}</option>)}
+          </select>
 
-        <button className="submitBtn" disabled={editSubmitting} onClick={submitEdit}>
-          {editSubmitting ? "Saving…" : "Save Changes"}
-        </button>
-        <button className="cancelBtn" onClick={onClose}>Cancel</button>
+          <span className="fieldLabel">Photo (Optional)</span>
+          {editForm.image ? (
+            <div className="previewWrap">
+              <img src={editForm.image} className="previewImg" alt="preview" />
+              <button className="removeImg" disabled={isExpired} onClick={() => setEditForm(f => ({ ...f, image: "" }))}><X size={14} style={{verticalAlign:'middle'}} /> Remove</button>
+            </div>
+          ) : (
+            <input type="file" accept="image/*"
+              disabled={isExpired}
+              onChange={e => handleEditImageChange(e.target.files[0])} />
+          )}
+
+          <button className="submitBtn" disabled={editSubmitting || isExpired} onClick={submitEdit}>
+            {editSubmitting ? "Saving…" : "Save Changes"}
+          </button>
+          <button className="cancelBtn" onClick={onClose}>Cancel</button>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   /* ── FORM MODAL ── */
   const FormModal = ({ type, onClose }) => (
@@ -858,9 +909,26 @@ export default function Dashboard() {
         )}
 
         {!isAdmin && item.type === "found" && item.status === "available" && (
-          <button className="claimBtn" onClick={() => { setClaimTarget(item); onClose(); }}>
-            Claim This Item
-          </button>
+          isReporterOfFoundItem(item) ? (
+            <div className="reporterClaimMessage" style={{ 
+              fontSize: '13px', 
+              color: 'var(--text-muted)', 
+              fontStyle: 'italic',
+              textAlign: 'center', 
+              padding: '8px',
+              border: '1px dashed var(--text-muted)',
+              borderRadius: '6px',
+              backgroundColor: 'rgba(255, 255, 255, 0.05)',
+              marginTop: '8px',
+              marginBottom: '8px'
+            }}>
+              You reported this item. Only other users can claim it.
+            </div>
+          ) : (
+            <button className="claimBtn" onClick={() => { setClaimTarget(item); onClose(); }}>
+              Claim This Item
+            </button>
+          )
         )}
         {!isAdmin && item.status === "pending" && (
           <div className="pendingNote" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -873,26 +941,32 @@ export default function Dashboard() {
           </div>
         )}
 
-        {isEditable(item) && (
-          <button
-            className="editBtn detailEditBtn"
-            onClick={() => {
-              setEditTarget(item);
-              setEditForm({
-                title: item.title,
-                description: item.description,
-                location: item.location,
-                dateOccurred: item.dateOccurred ? new Date(item.dateOccurred).toISOString().split("T")[0] : "",
-                category: item.category || "Other",
-                image: item.image || "",
-                adminDescription: item.adminDescription || "",
-                type: item.type
-              });
-              onClose();
-            }}
-          >
-            <span style={{ display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'center' }}><Pencil size={18} /> Edit Report ({formatEditCountdown(getEditTimeLeft(item))})</span>
-          </button>
+        {isOwnReport(item) && (
+          getEditTimeLeft(item) > 0 ? (
+            <button
+              className="editBtn detailEditBtn"
+              onClick={() => {
+                setEditTarget(item);
+                setEditForm({
+                  title: item.title,
+                  description: item.description,
+                  location: item.location,
+                  dateOccurred: item.dateOccurred ? new Date(item.dateOccurred).toISOString().split("T")[0] : "",
+                  category: item.category || "Other",
+                  image: item.image || "",
+                  adminDescription: item.adminDescription || "",
+                  type: item.type
+                });
+                onClose();
+              }}
+            >
+              <span style={{ display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'center' }}><Pencil size={18} /> Edit Report</span>
+            </button>
+          ) : (
+            <button className="editBtn detailEditBtn" disabled style={{ opacity: 0.6, cursor: 'not-allowed' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'center' }}><Lock size={18} /> Edit Expired</span>
+            </button>
+          )
         )}
         <button className="cancelBtn" onClick={onClose}>Close</button>
       </div>
@@ -1462,30 +1536,57 @@ export default function Dashboard() {
                     )}
 
                     {!isAdmin && item.type === "found" && item.status === "available" && (
-                      <button className="claimBtn" onClick={(e) => { e.stopPropagation(); setClaimTarget(item); }}>
-                        Claim Item
-                      </button>
+                      isReporterOfFoundItem(item) ? (
+                        <div className="reporterClaimMessage" style={{ 
+                          fontSize: '11px', 
+                          color: 'var(--text-muted)', 
+                          fontStyle: 'italic',
+                          textAlign: 'center', 
+                          padding: '4px',
+                          border: '1px dashed var(--text-muted)',
+                          borderRadius: '4px',
+                          width: '100%',
+                          marginTop: '4px'
+                        }}>
+                          You reported this item. Only other users can claim it.
+                        </div>
+                      ) : (
+                        <button className="claimBtn" onClick={(e) => { e.stopPropagation(); setClaimTarget(item); }}>
+                          Claim Item
+                        </button>
+                      )
                     )}
-                    {isEditable(item) && (
-                      <button
-                        className="editBtn"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEditTarget(item);
-                          setEditForm({
-                            title: item.title,
-                            description: item.description,
-                            location: item.location,
-                            dateOccurred: item.dateOccurred ? new Date(item.dateOccurred).toISOString().split("T")[0] : "",
-                            category: item.category || "Other",
-                            image: item.image || "",
-                            adminDescription: item.adminDescription || "",
-                            type: item.type
-                          });
-                        }}
-                      >
-                        <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}><Pencil size={14} /> Edit ({formatEditCountdown(getEditTimeLeft(item))})</span>
-                      </button>
+                    {isOwnReport(item) && (
+                      getEditTimeLeft(item) > 0 ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', width: '100%', marginTop: '4px' }}>
+                          <button
+                            className="editBtn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditTarget(item);
+                              setEditForm({
+                                title: item.title,
+                                description: item.description,
+                                location: item.location,
+                                dateOccurred: item.dateOccurred ? new Date(item.dateOccurred).toISOString().split("T")[0] : "",
+                                category: item.category || "Other",
+                                image: item.image || "",
+                                adminDescription: item.adminDescription || "",
+                                type: item.type
+                              });
+                            }}
+                          >
+                            <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}><Pencil size={14} /> Edit Report</span>
+                          </button>
+                          <span style={{ fontSize: '11px', color: 'var(--text-muted)', textAlign: 'center', marginTop: '2px' }}>
+                            {Math.ceil(getEditTimeLeft(item) / 60000)}m left
+                          </span>
+                        </div>
+                      ) : (
+                        <button className="editBtn" disabled style={{ opacity: 0.6, cursor: 'not-allowed', width: '100%', marginTop: '4px' }}>
+                          <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}><Lock size={14} /> Edit Expired</span>
+                        </button>
+                      )
                     )}
                   </div>
                 );

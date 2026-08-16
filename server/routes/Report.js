@@ -76,9 +76,27 @@ router.post("/", async (req, res) => {
   }
 });
 
+const jwt = require("jsonwebtoken");
+
+function getUserFromAuthHeader(req) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) return null;
+  const token = authHeader.split(" ")[1];
+  try {
+    return jwt.verify(token, process.env.JWT_SECRET || "fallback_secret");
+  } catch (err) {
+    return null;
+  }
+}
+
 // ── USER: EDIT REPORT (within 10 minutes of creation) ──
 router.patch("/:id/edit", async (req, res) => {
   try {
+    const user = getUserFromAuthHeader(req);
+    if (!user) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
+
     const report = await Report.findById(req.params.id);
     if (!report) {
       return res.status(404).json({ message: "Report not found" });
@@ -89,7 +107,7 @@ router.patch("/:id/edit", async (req, res) => {
     const age = Date.now() - new Date(report.createdAt).getTime();
     if (age > EDIT_WINDOW_MS) {
       return res.status(403).json({
-        message: "Edit window has expired. Reports can only be edited within 10 minutes of submission."
+        message: "Editing period has expired. This report can no longer be edited."
       });
     }
 
@@ -111,6 +129,11 @@ router.patch("/:id/edit", async (req, res) => {
 // ── CLAIM ITEM (sets status → pending) ──────────────────
 router.patch("/:id/claim", async (req, res) => {
   try {
+    const user = getUserFromAuthHeader(req);
+    if (!user) {
+      return res.status(401).json({ message: "Authentication required to claim an item" });
+    }
+
     const report = await Report.findById(req.params.id);
     if (!report) {
       return res.status(404).json({ message: "Report not found" });
@@ -125,6 +148,18 @@ router.patch("/:id/claim", async (req, res) => {
     if (report.status !== "available") {
       return res.status(400).json({
         message: "Item is not available to claim",
+      });
+    }
+
+    // Check if the authenticated user is the reporter of this FOUND item
+    const isReporter = 
+      (report.owner?.id && report.owner.id === user.id) ||
+      (report.owner?.email && report.owner.email === user.email) ||
+      (report.owner?.name && report.owner.name === user.username);
+
+    if (isReporter) {
+      return res.status(403).json({
+        message: "You cannot claim an item that you reported.",
       });
     }
 

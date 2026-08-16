@@ -49,6 +49,10 @@ const reportSchema = new mongoose.Schema(
       default: "",
     },
     owner: {
+      id: {
+        type: String,
+        default: "",
+      },
       name: {
         type: String,
         default: "",
