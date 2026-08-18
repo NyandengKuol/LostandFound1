@@ -859,7 +859,7 @@ export default function Dashboard() {
         )}
 
         <div className="detailMeta">
-          <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><MapPin size={16} /> Found Location: {item.location}</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><MapPin size={16} /> Location: {item.location}</span>
           {item.pickupLocation && <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Building size={16} /> Pickup Location: {item.pickupLocation}</span>}
           {item.pickupInstructions && <span style={{display: 'flex', marginTop: '10px', alignItems: 'center', gap: '6px'}}><MessageSquare size={16} /> Collection Instructions: {item.pickupInstructions}</span>}
           <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Calendar size={16} /> {item.dateOccurred ? new Date(item.dateOccurred).toLocaleDateString() : "—"}</span>
@@ -1450,7 +1450,7 @@ export default function Dashboard() {
                     </div>
 
                     <p className="itemDesc">{descriptionPreview}</p>
-                    <div className="location" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><MapPin size={14} /> Found at: {item.location}</div>
+                    <div className="location" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><MapPin size={14} /> Location: {item.location}</div>
                     {item.pickupLocation && <div className="location" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Building size={14} /> Pickup: {item.pickupLocation}</div>}
 
                     {isAdmin && item.claimer?.name && (
