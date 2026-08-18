@@ -6,7 +6,7 @@ import {
   Search, SlidersHorizontal, PlusCircle, PackagePlus, Bell, MapPin, Building,
   Calendar, Tag, User, Phone, MessageSquare, Clock, CheckCircle2, CheckCircle,
   AlertCircle, ChevronDown, Pencil, Trash2, XCircle, X, Package, SearchX, Upload, Clock3, Image as ImageIcon, Archive, ClipboardList,
-  Sun, Moon, RefreshCw, BarChart3, ShieldCheck, Send, Eye, AlertTriangle, Mail, LogOut, Lock
+  Sun, Moon, RefreshCw, BarChart3, ShieldCheck, Send, Eye, AlertTriangle, Mail, LogOut
 } from "lucide-react";
 import "./Dashboard.css";
 
@@ -689,20 +689,20 @@ export default function Dashboard() {
     const countdownInfo = getEditCountdownMessage(item);
     const isExpired = countdownInfo.state === "expired";
 
+    if (isExpired) return null;
+
     return (
       <div className="modal" onClick={onClose}>
         <div className="modalBox" onClick={e => e.stopPropagation()}>
           <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><Pencil size={24} /> Edit Report</h3>
-          {!isExpired && (
-            <p style={{
-              fontSize: 13,
-              color: countdownInfo.state === "low" ? "#ef4444" : "var(--text-muted)",
-              marginBottom: 12,
-              fontWeight: countdownInfo.state === "low" ? "bold" : "normal"
-            }}>
-              {countdownInfo.text}
-            </p>
-          )}
+          <p style={{
+            fontSize: 13,
+            color: countdownInfo.state === "low" ? "#ef4444" : "var(--text-muted)",
+            marginBottom: 12,
+            fontWeight: countdownInfo.state === "low" ? "bold" : "normal"
+          }}>
+            {countdownInfo.text}
+          </p>
 
           <span className="fieldLabel">Title *</span>
           <input placeholder="e.g. Black laptop bag"
@@ -926,32 +926,26 @@ export default function Dashboard() {
           </div>
         )}
 
-        {isOwnReport(item) && (
-          getEditTimeLeft(item) > 0 ? (
-            <button
-              className="editBtn detailEditBtn"
-              onClick={() => {
-                setEditTarget(item);
-                setEditForm({
-                  title: item.title,
-                  description: item.description,
-                  location: item.location,
-                  dateOccurred: item.dateOccurred ? new Date(item.dateOccurred).toISOString().split("T")[0] : "",
-                  category: item.category || "Other",
-                  image: item.image || "",
-                  adminDescription: item.adminDescription || "",
-                  type: item.type
-                });
-                onClose();
-              }}
-            >
-              <span style={{ display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'center' }}><Pencil size={18} /> Edit Report</span>
-            </button>
-          ) : (
-            <button className="editBtn detailEditBtn" disabled style={{ opacity: 0.6, cursor: 'not-allowed' }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'center' }}><Lock size={18} /> Edit Expired</span>
-            </button>
-          )
+        {isEditable(item) && (
+          <button
+            className="editBtn detailEditBtn"
+            onClick={() => {
+              setEditTarget(item);
+              setEditForm({
+                title: item.title,
+                description: item.description,
+                location: item.location,
+                dateOccurred: item.dateOccurred ? new Date(item.dateOccurred).toISOString().split("T")[0] : "",
+                category: item.category || "Other",
+                image: item.image || "",
+                adminDescription: item.adminDescription || "",
+                type: item.type
+              });
+              onClose();
+            }}
+          >
+            <span style={{ display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'center' }}><Pencil size={18} /> Edit Report</span>
+          </button>
         )}
         <button className="cancelBtn" onClick={onClose}>Close</button>
       </div>
@@ -1525,37 +1519,31 @@ export default function Dashboard() {
                         Claim Item
                       </button>
                     )}
-                    {isOwnReport(item) && (
-                      getEditTimeLeft(item) > 0 ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', width: '100%', marginTop: '4px' }}>
-                          <button
-                            className="editBtn"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setEditTarget(item);
-                              setEditForm({
-                                title: item.title,
-                                description: item.description,
-                                location: item.location,
-                                dateOccurred: item.dateOccurred ? new Date(item.dateOccurred).toISOString().split("T")[0] : "",
-                                category: item.category || "Other",
-                                image: item.image || "",
-                                adminDescription: item.adminDescription || "",
-                                type: item.type
-                              });
-                            }}
-                          >
-                            <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}><Pencil size={14} /> Edit Report</span>
-                          </button>
-                          <span style={{ fontSize: '11px', color: 'var(--text-muted)', textAlign: 'center', marginTop: '2px' }}>
-                            {Math.ceil(getEditTimeLeft(item) / 60000)}m left
-                          </span>
-                        </div>
-                      ) : (
-                        <button className="editBtn" disabled style={{ opacity: 0.6, cursor: 'not-allowed', width: '100%', marginTop: '4px' }}>
-                          <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}><Lock size={14} /> Edit Expired</span>
+                    {isEditable(item) && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', width: '100%', marginTop: '4px' }}>
+                        <button
+                          className="editBtn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditTarget(item);
+                            setEditForm({
+                              title: item.title,
+                              description: item.description,
+                              location: item.location,
+                              dateOccurred: item.dateOccurred ? new Date(item.dateOccurred).toISOString().split("T")[0] : "",
+                              category: item.category || "Other",
+                              image: item.image || "",
+                              adminDescription: item.adminDescription || "",
+                              type: item.type
+                            });
+                          }}
+                        >
+                          <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}><Pencil size={14} /> Edit Report</span>
                         </button>
-                      )
+                        <span style={{ fontSize: '11px', color: 'var(--text-muted)', textAlign: 'center', marginTop: '2px' }}>
+                          {Math.ceil(getEditTimeLeft(item) / 60000)}m left
+                        </span>
+                      </div>
                     )}
                   </div>
                 );
