@@ -551,7 +551,7 @@ export default function Dashboard() {
   const getEditCountdownMessage = (item) => {
     const timeLeft = getEditTimeLeft(item);
     if (timeLeft <= 0) {
-      return { text: "Editing period expired.", state: "expired" };
+      return { state: "expired" };
     }
     const secs = Math.max(0, Math.floor(timeLeft / 1000));
     const minutes = Math.floor(secs / 60);
@@ -693,14 +693,16 @@ export default function Dashboard() {
       <div className="modal" onClick={onClose}>
         <div className="modalBox" onClick={e => e.stopPropagation()}>
           <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><Pencil size={24} /> Edit Report</h3>
-          <p style={{
-            fontSize: 13,
-            color: isExpired || countdownInfo.state === "low" ? "#ef4444" : "var(--text-muted)",
-            marginBottom: 12,
-            fontWeight: countdownInfo.state === "low" ? "bold" : "normal"
-          }}>
-            {countdownInfo.text}
-          </p>
+          {!isExpired && (
+            <p style={{
+              fontSize: 13,
+              color: countdownInfo.state === "low" ? "#ef4444" : "var(--text-muted)",
+              marginBottom: 12,
+              fontWeight: countdownInfo.state === "low" ? "bold" : "normal"
+            }}>
+              {countdownInfo.text}
+            </p>
+          )}
 
           <span className="fieldLabel">Title *</span>
           <input placeholder="e.g. Black laptop bag"
@@ -908,27 +910,10 @@ export default function Dashboard() {
           </button>
         )}
 
-        {!isAdmin && item.type === "found" && item.status === "available" && (
-          isReporterOfFoundItem(item) ? (
-            <div className="reporterClaimMessage" style={{ 
-              fontSize: '13px', 
-              color: 'var(--text-muted)', 
-              fontStyle: 'italic',
-              textAlign: 'center', 
-              padding: '8px',
-              border: '1px dashed var(--text-muted)',
-              borderRadius: '6px',
-              backgroundColor: 'rgba(255, 255, 255, 0.05)',
-              marginTop: '8px',
-              marginBottom: '8px'
-            }}>
-              You reported this item. Only other users can claim it.
-            </div>
-          ) : (
-            <button className="claimBtn" onClick={() => { setClaimTarget(item); onClose(); }}>
-              Claim This Item
-            </button>
-          )
+        {!isAdmin && item.type === "found" && item.status === "available" && !isReporterOfFoundItem(item) && (
+          <button className="claimBtn" onClick={() => { setClaimTarget(item); onClose(); }}>
+            Claim This Item
+          </button>
         )}
         {!isAdmin && item.status === "pending" && (
           <div className="pendingNote" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -1535,26 +1520,10 @@ export default function Dashboard() {
                       </button>
                     )}
 
-                    {!isAdmin && item.type === "found" && item.status === "available" && (
-                      isReporterOfFoundItem(item) ? (
-                        <div className="reporterClaimMessage" style={{ 
-                          fontSize: '11px', 
-                          color: 'var(--text-muted)', 
-                          fontStyle: 'italic',
-                          textAlign: 'center', 
-                          padding: '4px',
-                          border: '1px dashed var(--text-muted)',
-                          borderRadius: '4px',
-                          width: '100%',
-                          marginTop: '4px'
-                        }}>
-                          You reported this item. Only other users can claim it.
-                        </div>
-                      ) : (
-                        <button className="claimBtn" onClick={(e) => { e.stopPropagation(); setClaimTarget(item); }}>
-                          Claim Item
-                        </button>
-                      )
+                    {!isAdmin && item.type === "found" && item.status === "available" && !isReporterOfFoundItem(item) && (
+                      <button className="claimBtn" onClick={(e) => { e.stopPropagation(); setClaimTarget(item); }}>
+                        Claim Item
+                      </button>
                     )}
                     {isOwnReport(item) && (
                       getEditTimeLeft(item) > 0 ? (
